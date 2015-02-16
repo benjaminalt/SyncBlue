@@ -1,0 +1,5 @@
+60
+C:\
+target path here
+one-way0
+1
