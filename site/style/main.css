@@ -7,96 +7,129 @@ html, body{
     background: url(../images/faux_columns.PNG), repeat-y;
     background-size: contain;
 }
-
+#container{
+    position:relative;
+    min-height:100%;
+}
 a{
-    color: #000;
+    color: #177EE5;
     text-decoration: none;
 }
-
 a:hover{
-    color: #79B1F6;
+    color: #000000;
     text-decoration: none;
 }
-
 #header{
     background: url(../images/faux_columns_header.PNG), repeat-y;
     background-size: contain;
     width: 100%;
+    padding: 20px 0 5px 0;
 }
-
 #header *{
     margin: 0;
 }
-
 #github{
     margin-top: 20px;
     display: inline-block;
     float: right;
     width: 15%;
 }
-
 #github a{
     display: block;
 }
-
 #github_img{
     display: inline-block;
     float: right;
     width: 100%;
     height: auto;
 }
-
 #title {
     margin-left: 15%;
     display: inline-block;
 }
+#title a{
+    color: #000000;
+}
+#title a:hover{
+    color: #000000;
+}
 h1{
     font-weight: 300;
-    font-size: 42pt;
+    font-size: 40pt;
 }
-
 h2{
     font-weight: 300;
+    font-size: 20pt;
 }
-
 #navigation{
     margin-left: 15%;
     margin-top: 15px;
 }
-
 .subnav{
+    font-size: 13pt;
     display: inline-block;
     padding: 3px 10px 3px 10px;;
 }
 
+.subnav a{
+    color: #000000;
+}
+.subnav a:hover{
+    color: #3399FF;
+}
 #first{
     padding-left: 0px;
 }
-
 #content{
     width: 100%;
     margin:0;
-    padding:0;
+    padding:0 0 60px 0;
 }
 
+#wrapper{
+    padding-left: 20px;
+}
+#content h2{
+    font-weight: 400;
+}
 #content p{
     padding-left: 20px;
     padding-right: 20px;
 }
-
 .column{
     display: inline-block;
     padding-bottom: 20px;
 }
-
 #colleft{
     width: 15%;
 }
-
 #colmid{
     width: 83.75%;
 }
-
 #colright{
     width: 1.25%;
+}
+#footer{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 83.75%;
+    background-color: #DAE2E8;
+    font-size: 9pt;
+    padding-left: 15%;
+    padding-right: 1.25%;
+}
+#footer p{
+    margin:0;
+    padding: 5px 5px 5px 20px;
+}
+#copyright{
+    float:left;
+}
+#contactEtc a{
+    padding: 0 5px 0 5px;
+}
+#contactEtc{
+    padding: 5px 0 5px 0; 
+    float:right;
 }
