@@ -7,11 +7,16 @@ html, body{
     background: url(../images/faux_columns.PNG), repeat-y;
     background-size: contain;
 }
+
 #container{
     position:relative;
     min-height:100%;
 }
 a{
+    text-decoration: none;
+}
+
+a p{
     color: #177EE5;
     text-decoration: none;
 }
@@ -102,6 +107,13 @@ h2{
 }
 #colleft{
     width: 15%;
+    vertical-align: top;
+    padding-top: 10px;
+}
+#colleft img{
+    width: 75%;
+    height: auto;
+    padding: 20px 0 0 0;
 }
 #colmid{
     width: 83.75%;
