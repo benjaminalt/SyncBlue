@@ -34,6 +34,7 @@ a:hover{
     margin: 0;
 }
 #github{
+    right: 0;
     margin-top: 20px;
     display: inline-block;
     float: right;
@@ -92,10 +93,17 @@ h2{
 }
 
 #wrapper{
-    padding-left: 20px;
+    padding-left: 40px;
+    padding-top: 20px;
 }
 #content h2{
     font-weight: 400;
+}
+#content h4{
+    padding-left: 10px;
+}
+#content h5{
+    padding-left: 15px;
 }
 #content p{
     padding-left: 20px;
@@ -110,8 +118,12 @@ h2{
     vertical-align: top;
     padding-top: 10px;
 }
+#menu_wrapper{
+    position:fixed;
+}
 #colleft img{
-    width: 75%;
+    width: 67%;
+    display: block;
     height: auto;
     padding: 20px 0 0 0;
 }
