@@ -37,7 +37,7 @@ def launch_server():
     client_sock.close()
 
 def advertise(server_sock):
-    advertise_service( server_sock, "BTSync",
+    advertise_service( server_sock, "SyncBlue",
                        service_id = "1106",
                        service_classes = [ "1106", SERIAL_PORT_CLASS ],
                        profiles = [ SERIAL_PORT_PROFILE ],

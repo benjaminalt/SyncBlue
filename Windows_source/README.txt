@@ -1,7 +1,7 @@
-BTSync Version 0.1 02/15/2015
+SyncBlue Version 0.1 02/15/2015
 
 
-BTSync is a cross-platform program that allows file and folder
+SyncBlue is a cross-platform program that allows file and folder
 synchronization via Bluetooth.
 It is open source and published under the GNU General Public License
 (GPL, http://www.gnu.org/licenses/gpl-3.0.txt).
@@ -35,7 +35,7 @@ CONTENTS
         It is possible to run the program on other platforms directly from
         the source code. To do so, extract the source folder, open a
         terminal/command-line utility, make the source folder your working directory
-        and type "python BTSync.py".
+        and type "python SyncBlue.py".
         
         Make sure you are running the correct version of Python
         (Python 2.7, https://www.python.org/download/releases/2.7/)
@@ -57,13 +57,13 @@ CONTENTS
     
         Most (but not all) target devices will only accept an incoming Bluetooth
         connection if the device has been paired with your computer. Therefore, before
-        you attempt to establish a connection through BTSync, ensure that your
+        you attempt to establish a connection through SyncBlue, ensure that your
         computer and your device are paired.
         
-        When BTSync is launched for the first time, the dropdown menu next to the
+        When SyncBlue is launched for the first time, the dropdown menu next to the
         "add device" button will be empty. To add a device, simply click "add device" and
         enter the Bluetooth name (not MAC address) of the target device when prompted.
-        BTSync will save all added devices fur future use.
+        SyncBlue will save all added devices fur future use.
         Devices can always be added and removed in the settings.
         
         Select the device to connect to from the dropdown menu and click on "find services".
@@ -72,7 +72,7 @@ CONTENTS
         and on the target device, that the target device is within range ( < 5 m.)
         and that your target device is discoverable and can accept incoming connection requests.
         If the problem persists, your target device does not support OBEX file transfer
-        and is incompatible with BTSync. Windows computers do not advertise OBEX file transfer
+        and is incompatible with SyncBlue. Windows computers do not advertise OBEX file transfer
         out of the box and are thus (still) not suitable as target devices.
         
     2.2. Synchronization
@@ -80,9 +80,9 @@ CONTENTS
         The default sync mode is "one-way sync". To change the sync mode, click "settings".
         
         One-way sync and two-way sync require the user to specify a sync folder on the
-        home device (i.e. the computer running BTSync) and remote sync folder on the target device.
+        home device (i.e. the computer running SyncBlue) and remote sync folder on the target device.
         It is possible to specify a target folder that does not exist yet.
-        As long as the parent directory exists, BTSync will create the sync folder at the desired
+        As long as the parent directory exists, SyncBlue will create the sync folder at the desired
         location.
         
         2.2.1. One-way sync

@@ -6,11 +6,11 @@
     <ProjectGuid>0ba0c81c-7933-4f9c-8124-e39b52a8d775</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>BTSync.py</StartupFile>
+    <StartupFile>SyncBlue.py</StartupFile>
     <SearchPath>.</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>BTSync</Name>
+    <Name>SyncBlue</Name>
     <RootNamespace>BluetoothSync</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -23,7 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BTDeviceFinder.py" />
-    <Compile Include="BTSync.py">
+    <Compile Include="SyncBlue.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="BTRFCOMMServerSDP.py">
