@@ -29,11 +29,10 @@ a:hover{
     position: relative;
     background-size: contain;
     width: 100%;
-    padding: 20px 0 0 0;
+    padding: 10px 0 0 0;
 }
 #header *{
     margin: 0;
-    z-index: 2;
 }
 #github{
     right: 0;
@@ -83,14 +82,14 @@ h2{
 }
 #navigation{
     margin-left: 15%;
-    margin-top: 0;
+    margin-top: -10px;
     padding-bottom: 5px;
     width: 83.7%
 }
 .subnav{
     font-size: 13pt;
     display: inline-block;
-    padding: 3px 10px 3px 10px;;
+    padding: 0 10px 0 10px;;
 }
 
 .subnav a{
