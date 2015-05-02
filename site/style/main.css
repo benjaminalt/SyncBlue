@@ -179,6 +179,12 @@ h2{
 }
 
 @media screen and (max-width: 875px) {
+    html, body{
+        background: url(../images/faux_columns_header.PNG), repeat-y;
+    }
+    #header{
+        background: none;
+    }
     #logo{
         width: 90%;
     }
@@ -190,7 +196,8 @@ h2{
         width: 79%; 
     }
     #colmid{
-        width: 78.7%;
+        width: 78.8%;
+        background-color: #FFF;
     }
     #colleft{
         width: 21%;
@@ -199,13 +206,7 @@ h2{
         display: none;
     }
     #colleft img{
-        width: 90%;
-    }
-    html, body{
-        background: url(../images/faux_columns_header.png), repeat-y;
-    }
-    #header{
-        background: none;
+        width: 94%;
     }
 }
 
