@@ -87,7 +87,7 @@ h2{
     width: 83.7%
 }
 .subnav{
-    font-size: 13pt;
+    font-size: 14pt;
     display: inline-block;
     padding: 0 10px 0 10px;;
 }
@@ -141,7 +141,7 @@ h2{
 }
 #colleft img{
     display: block;
-    width: 62%;
+    width: 64%;
     height: auto;
     padding: 20px 0 0 0;
 }
@@ -176,4 +176,43 @@ h2{
 #contactEtc{
     padding: 5px 0 5px 0; 
     float:right;
+}
+
+@media screen and (max-width: 875px) {
+    #logo{
+        width: 90%;
+    }
+    #github{
+        display: none;
+    }
+    #navigation{
+        margin-left: 21%;
+        width: 79%; 
+    }
+    #colmid{
+        width: 78.7%;
+    }
+    #colleft{
+        width: 21%;
+    }
+    #colright{
+        display: none;
+    }
+    #colleft img{
+        width: 90%;
+    }
+    html, body{
+        background: url(../images/faux_columns_header.png), repeat-y;
+    }
+    #header{
+        background: none;
+    }
+}
+
+/* Mobile phone */
+@media screen and (max-width: 480px) {
+    a{
+        color: #FFF;
+    }
+    
 }
