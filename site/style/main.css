@@ -165,7 +165,7 @@ h2{
 }
 #footer p{
     margin:0;
-    padding: 5px 5px 5px 20px;
+    padding: 5px 5px 5px 5px;
 }
 #copyright{
     float:left;
@@ -180,7 +180,8 @@ h2{
 
 @media screen and (max-width: 875px) {
     html, body{
-        background: url(../images/faux_columns_header.PNG), repeat-y;
+        background: url(../images/faux_columns_tablet.PNG), repeat-y;
+        background-size: contain;
     }
     #header{
         background: none;
@@ -206,14 +207,39 @@ h2{
         display: none;
     }
     #colleft img{
-        width: 94%;
+        width: 93%;
+    }
+    #menu_wrapper{
+        width: 21%;
+    }
+    #wrapper{
+        padding-top: 0;
+    }
+    #footer{
+        padding-left: 5px;
+        width: 98%;
     }
 }
 
-/* Mobile phone */
-@media screen and (max-width: 480px) {
-    a{
-        color: #FFF;
+@media screen and (max-width: 500px) {
+    #colleft, #colleft *{
+        display: none;
     }
-    
+    #colmid {
+        width: 99%;
+        padding-bottom: 40px;
+    }
+    #footer {
+        padding-right: 0;
+        width: 100%;
+    }
+    #copyright, #contactEtc {
+        width: 60%;
+        display: block;
+        float: none;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+    }
+
 }
