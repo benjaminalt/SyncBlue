@@ -1,0 +1,13 @@
+form{
+    padding-top: 20px;
+}
+#table{
+    width: 400px !important;
+}
+#table input, #table textarea {
+    width: 250px !important;
+}
+#table2 input {
+    width: 50px !important;
+}
+

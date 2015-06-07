@@ -1,5 +1,5 @@
 60
-C:\
+C:\Users\benjaminalt
 target path here
-one-way0
+manual
 1

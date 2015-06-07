@@ -16,35 +16,98 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 
 """
+""" Server should support put, get, listdir, change dir, mkdir """
 
 from bluetooth import *
+from PyOBEX.common import OBEX_Version
+from PyOBEX import server
+from PyOBEX import requests
+from PyOBEX import responses
+from os.path import expanduser
 
-def launch_server():
-    server_sock=BluetoothSocket( RFCOMM )
-    print "Socket made..."
-    server_sock.bind(("",PORT_ANY))
-    print "Socket bound..."
-    server_sock.listen(1)
-    print "Socket listened..."
-    port = server_sock.getsockname()[1]
-    print "Port discovered..."
+class SyncBlueServer(server.Server):
+    
+    def __init__(self, address = ""):
+        print "Creating server object..."
+        self.address = address
+        self.max_packet_length = 0xffff
+        self.obex_version = OBEX_Version()
+        self.request_handler = requests.RequestHandler()
+        self.path = expanduser("~")                             # Default path: Home directory
+        print "Server object created."
 
-    advertise(server_sock)
+    # Re-implementation of start_service
+    def start_service(self, port = None):
+    
+        if port is None:
+            port = 0
+        
+        name = "SyncBlue Server"
+        uuid = "F9EC7BC4-953C-11d2-984E-525400DC9E09"
+        service_classes = [OBEX_FILETRANS_CLASS]
+        service_profiles = [OBEX_FILETRANS_PROFILE]
+        provider = ""
+        description = "SyncBlue"
+        protocols = [OBEX_UUID]
+        
+        # Returns a BluetoothSocket instance
+        return server.Server.start_service(
+            self, port, name, uuid, service_classes, service_profiles,
+            provider, description, protocols
+            )
 
-    print "Connection successful."
-    print "Disconnecting..."
-    server_sock.close()
-    client_sock.close()
+    # Re-implementation of process_request: Called every time a request arrives
+    def process_request(self, connection, request):
+        
+        if isinstance(request, requests.Connect):
+            print "Received connection request."
+            self.connect(connection, request)
+        
+        elif isinstance(request, requests.Disconnect):
+            print "Received disconnection request."
+            self.disconnect(connection, request)
+        
+        # Automatically rejects for now
+        elif isinstance(request, requests.Put):
+            print "Received put request."
+            self.put(connection, request)
+        
+        # Doesn't exist yet
+        elif isinstance(request, requests.Set_Path):
+            print "Received setpath request."
+            self.set_path(connection, request)
+            print "New path: ", self.path
 
-def advertise(server_sock):
-    advertise_service( server_sock, "BTSync",
-                       service_id = "1106",
-                       service_classes = [ "1106", SERIAL_PORT_CLASS ],
-                       profiles = [ SERIAL_PORT_PROFILE ],
-                       protocols = [ OBEX_UUID ]
-                       )
-    print("Waiting for connection on RFCOMM")
+        else:
+            self._reject(connection)
 
-    client_sock, client_info = server_sock.accept()
-    print("Accepted connection from ", client_info)
-    return
+    # Handles put request
+    def put(self, socket, request):
+        # Read in the data, save it 
+        header_data = request.read_data()
+        print "Got something, here is what it contains:"
+        for item in header_data:
+            print item
+        print "Sending CONTINUE response"
+        self.send_response(socket, responses.Continue())                         # Check if response arrived
+        # self._reject(socket)
+    
+        # Set the current directory
+    def set_path(self, connection, request):
+        pass
+
+    def send_response(self, socket, response, header_list = []):
+    
+        ### TODO: This needs to be able to split messages that are longer than
+        ### the maximum message length agreed with the other party.
+        while header_list:
+        
+            if response.add_header(header_list[0], self._max_length()):
+                header_list.pop(0)
+            else:
+                # Need to call send repeatedly until all data is sent!!!
+                socket.send(response.encode())
+                response.reset_headers()
+        
+        # Always send at least one request.                 WHAT IS THIS ABOUT?
+        socket.send(response.encode())
