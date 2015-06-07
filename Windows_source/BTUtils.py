@@ -283,9 +283,12 @@ def get_attributes_target(client):
         elif tempdict["type"] == "file":
             tempdict["name"] = re.sub('file name="', '', re.findall(file_re, item)[0]).rstrip('"')
         else:
-            return 
-        temptime = re.sub('modified="','', re.findall(datetime_re, item)[0]).rstrip('"').replace("T", "").replace("Z", "")
-        tempdict["date"] = datetime.datetime.strptime(temptime, "%Y%m%d%H%M%S").replace(second = 0)
+            return
+        if (re.findall(datetime_re, item)):
+            temptime = re.sub('modified="','', re.findall(datetime_re, item)[0]).rstrip('"').replace("T", "").replace("Z", "")
+            tempdict["date"] = datetime.datetime.strptime(temptime, "%Y%m%d%H%M%S").replace(second = 0)
+        else:
+            tempdict["date"] = datetime.datetime.today()            # Fix this?
         datalist.append(tempdict)
     return datalist
 

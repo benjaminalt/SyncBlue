@@ -24,6 +24,7 @@ import bluetooth
 import os
 import PyOBEX.client
 import PyOBEX.responses
+import PyOBEX.requests
 import BTUtils
 import shutil
 from PyQt4 import QtCore, QtGui
@@ -238,9 +239,10 @@ class BluetoothSync(QtGui.QMainWindow):
             self.disable_manual()
         
     @QtCore.pyqtSlot()
-    def launch_server(self):
+    def launch_server(self, ):
         self.serverWindow = ServerWindow(self)
         self.serverWindow.exec_()
+        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
 
     def launch_manual(self):
         self.disable_top()
@@ -265,9 +267,9 @@ class BluetoothSync(QtGui.QMainWindow):
         self.container.manualSyncSublayout.addWidget(self.deleteButton)
         self.newDirButton = QtGui.QPushButton("New folder")
         self.container.manualSyncSublayout.addWidget(self.newDirButton)
-        self.manualOkButton = QtGui.QPushButton("Disconnect")
-        self.container.manualSyncSublayout.addWidget(self.manualOkButton)
-        self.manualOkButton.clicked.connect(self.ok)
+        self.manualDisconnButton = QtGui.QPushButton("Disconnect")
+        self.container.manualSyncSublayout.addWidget(self.manualDisconnButton)
+        self.manualDisconnButton.clicked.connect(self.manual_disconn)
         self.getButton.clicked.connect(self.get)
         self.putFileButton.clicked.connect(self.put_file)
         self.putFolderButton.clicked.connect(self.put_folder)
@@ -289,15 +291,18 @@ class BluetoothSync(QtGui.QMainWindow):
         for item in contents:
             self.manualSync.addItem(item["name"])
 
-    def ok(self):
-        print "Disconnecting..."
-        disconn = self.client.disconnect()
-        if isinstance(disconn, PyOBEX.responses.Success):
-            print "Disconnected successfully."
-        else:
-            print "Disconnection failed."
-        self.enable_top()
-        self.container.hide()
+    def manual_disconn(self):
+        try:
+            print "Disconnecting..."
+            disconn = self.client.disconnect()
+            if isinstance(disconn, PyOBEX.responses.Success):
+                print "Disconnected successfully."
+            else:
+                print "Disconnection failed."
+            self.enable_top()
+            self.container.hide()
+        except AttributeError:
+            print "There was an error in the connection. Disconnected."
 
     def get(self):
         try:
@@ -309,11 +314,11 @@ class BluetoothSync(QtGui.QMainWindow):
                 dialog.setFileMode(QtGui.QFileDialog.AnyFile)
                 filepath = str(QtGui.QFileDialog.getExistingDirectory(self, "Save as...", self.tempPath, QtGui.QFileDialog.ShowDirsOnly))
                 print "Getting file..."
-                print "Path is: ", filepath
+                print "Saving file at: ", filepath
                 if self.tempPath:
                     fo = open(os.path.join(filepath, attributes[row]["name"]), "wb")
                 else:
-                    print "Please specify a valid path."
+                    print "Please specify a valid path. \n GET aborted."
                     return
                 fo.write(data)
                 fo.close()
@@ -422,7 +427,7 @@ class BluetoothSync(QtGui.QMainWindow):
         self.serviceConnectButton.setEnabled(True)
         self.selectService.setEnabled(True)
 
-# For select services
+    # For select services
     def populate_selectBox(self):
         self.selectService.clear()
         current_device = str(self.chooseName.currentText())
@@ -476,6 +481,7 @@ class BluetoothSync(QtGui.QMainWindow):
     # For lookup by device name
     def selectName(self, text):
         self.name = str(text)
+    
     def showNameDialog(self):
         self.name, ok = QtGui.QInputDialog.getText(self, 'Add new device', 'Find device by name:')
         self.name = str(self.name)
@@ -514,6 +520,7 @@ class BluetoothSync(QtGui.QMainWindow):
     # Actual connection
     def connect(self):
         try:
+            print self.mode
             if not self.selectService.currentItem():
                 print "Please select a service."
                 return
@@ -537,6 +544,7 @@ class BluetoothSync(QtGui.QMainWindow):
                 print "Connected successfully."
             else:
                 print "Connection failed. Make sure you selected 'OBEX File Transfer'."
+            
             if "one-way" in self.mode:
                 self.disable_top()
                 if "0" in self.mode:
@@ -607,15 +615,23 @@ class EmittingStream(QtCore.QObject):
 class ServerWindow(QtGui.QDialog):
     def __init__(self, parent=BluetoothSync):
         super(ServerWindow, self).__init__(parent)
+        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        self.setWindowTitle("Server Mode")
         self.initUI(parent)
 
     def initUI(self, parent):
         self.mainLayout = QtGui.QVBoxLayout(self)
         self.log = QtGui.QTextEdit(self)
         self.mainLayout.addWidget(self.log)
+        self.buttonLayout = QtGui.QHBoxLayout()
+        self.mainLayout.addLayout(self.buttonLayout)
         self.startServerButton = QtGui.QPushButton("Launch server", self)
-        self.mainLayout.addWidget(self.startServerButton)
+        self.buttonLayout.addWidget(self.startServerButton)
         self.startServerButton.connect(self.startServerButton, QtCore.SIGNAL("clicked()"), self.startServer)
+        self.abortServerButton = QtGui.QPushButton("Abort", self)
+        self.buttonLayout.addWidget(self.abortServerButton)
+        self.abortServerButton.connect(self.abortServerButton, QtCore.SIGNAL("clicked()"), self.abortServer)
+        self.abortServerButton.setEnabled(False)
     
     def normalOutputWritten(self, text):
         cursor = self.log.textCursor()
@@ -625,7 +641,27 @@ class ServerWindow(QtGui.QDialog):
         self.log.ensureCursorVisible()
 
     def startServer(self):
-        BTServerMode.launch_server()
+        self.server = BTServerMode.SyncBlueServer()
+        self.abortServerButton.setEnabled(True)
+        self.startServerButton.setEnabled(False)
+        self.server_sock = self.server.start_service()          # Returns BluetoothSocket object
+        #server.serve(server_sock)
+    
+    def abortServer(self):
+        try:
+            reply = QtGui.QMessageBox.question(self, "Server abort", "Are you sure you want to abort?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                self.startServerButton.setEnabled(True)
+                self.abortServerButton.setEnabled(False)
+                if (self.server):
+                    self.server.disconnect(self.server_sock, PyOBEX.requests.Disconnect)
+                    print "Server terminated."
+            else:
+                pass
+        except IOError:                                         # If attempting to disconnect a disconnected socket
+            print "The connection has been lost. Terminating server..."
+            self.server_sock.close()
+            print "Server terminated."
 
 # Settings window class
 class SettingsWindow(QtGui.QDialog):
