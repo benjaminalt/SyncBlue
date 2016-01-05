@@ -1,6 +1,11 @@
 """
-Copyright 2015 Benjamin Alt
-benjaminalt@arcor.de
+Copyright 2016 Benjamin Alt
+benjamin_alt@outlook.com
+
+SyncBlue.py
+
+Entry point to SyncBlue.
+Main GUI functions & application logic.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,14 +23,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import sys
-import BTDeviceFinder
-import BTServerMode
+import eu.syncblue.server
+import eu.syncblue.utils
+import eu.syncblue.devicefinder as devicefinder
 import bluetooth
 import os
 import PyOBEX.client
 import PyOBEX.responses
 import PyOBEX.requests
-import BTUtils
 import shutil
 from PyQt4 import QtCore, QtGui
 import os
@@ -279,14 +284,14 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.refresh()
 
     def open_folder(self):
-        contents = BTUtils.get_attributes_target(self.client)
+        contents = eu.syncblue.utils.get_attributes_target(self.client)
         row = self.manualSync.row(self.manualSync.selectedItems()[0])
         if contents[row]["type"] == "folder":
             self.client.setpath(str(self.manualSync.selectedItems()[0].text()))
             self.refresh()
 
     def refresh(self):
-        contents = BTUtils.get_attributes_target(self.client)
+        contents = eu.syncblue.utils.get_attributes_target(self.client)
         self.manualSync.clear()
         for item in contents:
             self.manualSync.addItem(item["name"])
@@ -306,7 +311,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
 
     def get(self):
         try:
-            attributes = BTUtils.get_attributes_target(self.client)
+            attributes = eu.syncblue.utils.get_attributes_target(self.client)
             row = self.manualSync.row(self.manualSync.selectedItems()[0])
             if attributes[row]["type"] == "file":
                 headers, data = self.client.get(str(self.manualSync.selectedItems()[0].text()))
@@ -330,7 +335,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                                                              QtGui.QFileDialog.ShowDirsOnly))
                 self.client.setpath(str(self.manualSync.currentItem().text()))
                 print "Getting folder..."
-                BTUtils.get_folder(self.client, self.tempPath, "")
+                eu.syncblue.utils.get_folder(self.client, self.tempPath, "")
                 self.client.setpath(to_parent = True)
                 print "Folder transferred."
             self.refresh()
@@ -369,10 +374,10 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         print "Filepath:", filepath
         if cutoff != 0:
             self.client.setpath(filepath[cutoff+1:], create_dir = True)
-            BTUtils.one_way_sync(self.client, filepath, filepath[cutoff+1:])
+            eu.syncblue.utils.one_way_sync(self.client, filepath, filepath[cutoff+1:])
         else:
             self.client.setpath(filepath[cutoff:], create_dir = True)
-            BTUtils.one_way_sync(self.client, filepath, filepath[cutoff:])
+            eu.syncblue.utils.one_way_sync(self.client, filepath, filepath[cutoff:])
         self.refresh()
 
     def newdir(self):
@@ -489,7 +494,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
             self.saveEnteredName()
 
     def saveEnteredName(self):
-        address = str(BTDeviceFinder.find_by_name(self.name))
+        address = str(devicefinder.find_by_name(self.name))
         if address:
             self.addresses[self.name] = address
             saveAddresses(self.addresses)
@@ -551,15 +556,15 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                     message = "Are you sure you want to one-way-sync {0} to the remote device? The contents of {1} on the remote device will be lost and overwritten by the new contents.".format(self.path, self.target_path)
                     reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.Yes:
-                        BTUtils.find_target_folder(self.client, self.target_path)
+                        eu.syncblue.utils.find_target_folder(self.client, self.target_path)
                         print "Syncing..."
-                        BTUtils.one_way_sync(self.client, self.path, self.target_path)
+                        eu.syncblue.utils.one_way_sync(self.client, self.path, self.target_path)
                     else: pass
                 else:
                     message = "Are you sure you want to one-way-sync {0} from the remote device? The contents of {1} on the computer will be lost and overwritten by the new contents.".format(self.target_path, self.path)
                     reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.Yes:
-                        BTUtils.find_target_folder(self.client, self.target_path)
+                        eu.syncblue.utils.find_target_folder(self.client, self.target_path)
                         print "Syncing..."
                         try:
                             if os.path.exists(self.path):
@@ -574,7 +579,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                                 print "Disconnection failed."
                             return
                         os.mkdir(self.path)
-                        BTUtils.get_folder(self.client, self.path, "")
+                        eu.syncblue.utils.get_folder(self.client, self.path, "")
                     else: pass
                 disconn = self.client.disconnect()
                 if isinstance(disconn, PyOBEX.responses.Success):
@@ -587,9 +592,9 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                 message = "Are you sure you want to two-way-sync {0} with {1} on the remote device? Files that do not exist in one of the locations will be added to the other, and older file versions will be overwritten.".format(self.path, self.target_path)
                 reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                 if reply == QtGui.QMessageBox.Yes:
-                    BTUtils.find_target_folder(self.client, self.target_path)
+                    eu.syncblue.utils.find_target_folder(self.client, self.target_path)
                     print "Syncing..."
-                    BTUtils.two_way_sync(self.client, self.path)
+                    eu.syncblue.utils.two_way_sync(self.client, self.path)
                 else: pass
                 disconn = self.client.disconnect()
                 if isinstance(disconn, PyOBEX.responses.Success):
@@ -641,7 +646,7 @@ class ServerWindow(QtGui.QDialog):
         self.log.ensureCursorVisible()
 
     def startServer(self):
-        self.server = BTServerMode.SyncBlueServer()
+        self.server = eu.syncblue.server.SyncBlueServer()
         self.abortServerButton.setEnabled(True)
         self.startServerButton.setEnabled(False)
         self.server_sock = self.server.start_service()          # Returns BluetoothSocket object
@@ -760,11 +765,11 @@ class SettingsWindow(QtGui.QDialog):
         self.verticalLayout_2.addLayout(self.verboseLayout)
 
     def addDeviceAction(self):
-        # Ask for a name; run BTDevicefinder and save name, address in tempAddresses
+        # Ask for a name; run devicefinder and save name, address in tempAddresses
         name, ok = QtGui.QInputDialog.getText(self, 'Add new device', 'Find device by name:')
         if ok:
             try:
-                address = BTDeviceFinder.find_by_name(name)
+                address = devicefinder.find_by_name(name)
                 if address:
                     self.tempAddresses[name] = address
                     self.deleteList.addItem(name)
