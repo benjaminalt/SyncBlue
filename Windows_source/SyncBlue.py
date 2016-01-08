@@ -1,7 +1,12 @@
-""" 
-Copyright 2015 Benjamin Alt 
-benjaminalt@arcor.de
-    
+"""
+Copyright 2016 Benjamin Alt
+benjamin_alt@outlook.com
+
+SyncBlue.py
+
+Entry point to SyncBlue.
+Main GUI functions & application logic.
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -13,25 +18,26 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
 import sys
-import BTDeviceFinder
-import BTServerMode
+import eu.syncblue.server
+import eu.syncblue.clientutils as utils
+import eu.syncblue.devicefinder as devicefinder
 import bluetooth
 import os
 import PyOBEX.client
 import PyOBEX.responses
 import PyOBEX.requests
-import BTUtils
 import shutil
 from PyQt4 import QtCore, QtGui
 import os
 import sys
 import ctypes
 
+DEBUG = True
 myappid = 'SyncBlue'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
@@ -82,24 +88,24 @@ def saveData(timeout, path, target_path, mode, verbose):
     fo.write("{0}\n{1}\n{2}\n{3}\n{4}".format(str(timeout), str(path), str(target_path), str(mode), str(verbose)))
     fo.close()
 
-class BluetoothSync(QtGui.QMainWindow):
-    
+class SyncBlueMainWindow(QtGui.QMainWindow):
+
     def __init__(self):
-        super(BluetoothSync, self).__init__()
-        
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        super(SyncBlueMainWindow, self).__init__()
+        if not DEBUG:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
         self.timeout, self.path, self.target_path, self.mode, self.verbose = loadData()
         self.addresses = loadAddresses()
         self.name = ""
         self.current_services = []
         self.tempPath = os.path.expanduser("~")
         self.initUI()
-    
+
     # Restore sys.stdout
     def __del__(self):
         sys.stdout = sys.__stdout__
 
-    # Initializes the user interface    
+    # Initializes the user interface
     def initUI(self):
         # Set up main window interface
         self.setGeometry(300, 300, 500, 500)
@@ -110,7 +116,7 @@ class BluetoothSync(QtGui.QMainWindow):
         self.menubar = self.menuBar()
         self.launchServerMode = QtGui.QAction("Server Mode", self)
         self.launchServerMode.triggered.connect(self.launch_server)
-        self.launchServerMode.setEnabled(False)
+        # self.launchServerMode.setEnabled(False)
         self.menubar.addAction(self.launchServerMode)
         self.settingsAction = QtGui.QAction("Settings", self)
         self.settingsAction.triggered.connect(self.launch_settings)
@@ -162,7 +168,7 @@ class BluetoothSync(QtGui.QMainWindow):
         self.selectTargetFolderButton = QtGui.QPushButton("Save")
         self.frame.setTargetLayout.addWidget(self.selectTargetFolderButton)
         self.selectTargetFolderButton.connect(self.selectTargetFolderButton, QtCore.SIGNAL("clicked()"), self.setTarget)
-                
+
         # Available services
         self.frame.servicesLayout = QtGui.QHBoxLayout()
         self.frame.mainLayout.addLayout(self.frame.servicesLayout)
@@ -202,7 +208,7 @@ class BluetoothSync(QtGui.QMainWindow):
         self.frame.actionLayout.addWidget(self.quitButton)
         self.frame.setLayout(self.frame.mainLayout)
         self.show()
-    
+
     # For menubar
     @QtCore.pyqtSlot()
     def launch_settings(self):
@@ -237,12 +243,13 @@ class BluetoothSync(QtGui.QMainWindow):
             self.enable_manual()
         else:
             self.disable_manual()
-        
+
     @QtCore.pyqtSlot()
-    def launch_server(self, ):
+    def launch_server(self):
         self.serverWindow = ServerWindow(self)
         self.serverWindow.exec_()
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        if not DEBUG:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
 
     def launch_manual(self):
         self.disable_top()
@@ -279,14 +286,14 @@ class BluetoothSync(QtGui.QMainWindow):
         self.refresh()
 
     def open_folder(self):
-        contents = BTUtils.get_attributes_target(self.client)
+        contents = utils.get_attributes_target(self.client)
         row = self.manualSync.row(self.manualSync.selectedItems()[0])
         if contents[row]["type"] == "folder":
             self.client.setpath(str(self.manualSync.selectedItems()[0].text()))
             self.refresh()
-    
+
     def refresh(self):
-        contents = BTUtils.get_attributes_target(self.client)
+        contents = utils.get_attributes_target(self.client)
         self.manualSync.clear()
         for item in contents:
             self.manualSync.addItem(item["name"])
@@ -306,7 +313,7 @@ class BluetoothSync(QtGui.QMainWindow):
 
     def get(self):
         try:
-            attributes = BTUtils.get_attributes_target(self.client)
+            attributes = utils.get_attributes_target(self.client)
             row = self.manualSync.row(self.manualSync.selectedItems()[0])
             if attributes[row]["type"] == "file":
                 headers, data = self.client.get(str(self.manualSync.selectedItems()[0].text()))
@@ -324,13 +331,13 @@ class BluetoothSync(QtGui.QMainWindow):
                 fo.close()
                 print "File transferred."
             else:
-                self.tempPath = str(QtGui.QFileDialog.getExistingDirectory(self, 
-                                                             'Save as...', 
-                                                             self.tempPath, 
+                self.tempPath = str(QtGui.QFileDialog.getExistingDirectory(self,
+                                                             'Save as...',
+                                                             self.tempPath,
                                                              QtGui.QFileDialog.ShowDirsOnly))
                 self.client.setpath(str(self.manualSync.currentItem().text()))
                 print "Getting folder..."
-                BTUtils.get_folder(self.client, self.tempPath, "")
+                utils.get_folder(self.client, self.tempPath, "")
                 self.client.setpath(to_parent = True)
                 print "Folder transferred."
             self.refresh()
@@ -342,7 +349,7 @@ class BluetoothSync(QtGui.QMainWindow):
         if "/" in filepath:
             cutoff = filepath.rfind("/")
             self.tempPath = filepath[:cutoff]
-        else: 
+        else:
             cutoff = 0
             self.tempPath = ""
         print "Temp path:", self.tempPath
@@ -362,19 +369,19 @@ class BluetoothSync(QtGui.QMainWindow):
         if "\\" in filepath:
             cutoff = filepath.rfind("\\")
             self.tempPath = filepath[:cutoff]
-        else: 
+        else:
             cutoff = 0
             self.tempPath = ""
         print "Temp path:", self.tempPath
         print "Filepath:", filepath
         if cutoff != 0:
             self.client.setpath(filepath[cutoff+1:], create_dir = True)
-            BTUtils.one_way_sync(self.client, filepath, filepath[cutoff+1:])
+            utils.one_way_sync(self.client, filepath, filepath[cutoff+1:])
         else:
             self.client.setpath(filepath[cutoff:], create_dir = True)
-            BTUtils.one_way_sync(self.client, filepath, filepath[cutoff:])
+            utils.one_way_sync(self.client, filepath, filepath[cutoff:])
         self.refresh()
-    
+
     def newdir(self):
         dirname, ok = QtGui.QInputDialog.getText(self, 'Directory name', 'New folder')
         dirname = str(dirname)
@@ -400,7 +407,7 @@ class BluetoothSync(QtGui.QMainWindow):
          self.currentFolderLabel.hide()
          self.displayLocalFolderLabel.hide()
          self.selectSyncFolderButton.hide()
-    
+
     def disable_manual(self):
         self.targetFolderLabel.show()
         self.targetFolderText.show()
@@ -459,7 +466,7 @@ class BluetoothSync(QtGui.QMainWindow):
         cursor.insertText(text)
         self.textEdit.setTextCursor(cursor)
         self.textEdit.ensureCursorVisible()
-    
+
     # Handles closing event
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? Devices & addresses will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
@@ -469,7 +476,7 @@ class BluetoothSync(QtGui.QMainWindow):
             event.accept()
         else:
             event.ignore()
-    
+
     # For quit button
     def quitAction(self):
         reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? Devices & addresses will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
@@ -477,11 +484,11 @@ class BluetoothSync(QtGui.QMainWindow):
             saveAddresses(self.addresses)
             saveData(self.timeout, self.path, self.target_path, self.mode, self.verbose)
             QtCore.QCoreApplication.instance().quit()
-    
+
     # For lookup by device name
     def selectName(self, text):
         self.name = str(text)
-    
+
     def showNameDialog(self):
         self.name, ok = QtGui.QInputDialog.getText(self, 'Add new device', 'Find device by name:')
         self.name = str(self.name)
@@ -489,7 +496,7 @@ class BluetoothSync(QtGui.QMainWindow):
             self.saveEnteredName()
 
     def saveEnteredName(self):
-        address = str(BTDeviceFinder.find_by_name(self.name))
+        address = str(devicefinder.find_by_name(self.name))
         if address:
             self.addresses[self.name] = address
             saveAddresses(self.addresses)
@@ -507,9 +514,9 @@ class BluetoothSync(QtGui.QMainWindow):
     # For get sync folder
     def browse(self):
         startingDir = os.path.expanduser("~")
-        self.path = str(QtGui.QFileDialog.getExistingDirectory(None, 
-                                                         'Open working directory', 
-                                                         startingDir, 
+        self.path = str(QtGui.QFileDialog.getExistingDirectory(None,
+                                                         'Open working directory',
+                                                         startingDir,
                                                          QtGui.QFileDialog.ShowDirsOnly))
         self.displayLocalFolderLabel.setText(self.path)
 
@@ -544,22 +551,22 @@ class BluetoothSync(QtGui.QMainWindow):
                 print "Connected successfully."
             else:
                 print "Connection failed. Make sure you selected 'OBEX File Transfer'."
-            
+
             if "one-way" in self.mode:
                 self.disable_top()
                 if "0" in self.mode:
                     message = "Are you sure you want to one-way-sync {0} to the remote device? The contents of {1} on the remote device will be lost and overwritten by the new contents.".format(self.path, self.target_path)
                     reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.Yes:
-                        BTUtils.find_target_folder(self.client, self.target_path)
+                        utils.find_target_folder(self.client, self.target_path)
                         print "Syncing..."
-                        BTUtils.one_way_sync(self.client, self.path, self.target_path)
+                        utils.one_way_sync(self.client, self.path, self.target_path)
                     else: pass
                 else:
                     message = "Are you sure you want to one-way-sync {0} from the remote device? The contents of {1} on the computer will be lost and overwritten by the new contents.".format(self.target_path, self.path)
                     reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.Yes:
-                        BTUtils.find_target_folder(self.client, self.target_path)
+                        utils.find_target_folder(self.client, self.target_path)
                         print "Syncing..."
                         try:
                             if os.path.exists(self.path):
@@ -574,7 +581,7 @@ class BluetoothSync(QtGui.QMainWindow):
                                 print "Disconnection failed."
                             return
                         os.mkdir(self.path)
-                        BTUtils.get_folder(self.client, self.path, "")
+                        utils.get_folder(self.client, self.path, "")
                     else: pass
                 disconn = self.client.disconnect()
                 if isinstance(disconn, PyOBEX.responses.Success):
@@ -587,9 +594,9 @@ class BluetoothSync(QtGui.QMainWindow):
                 message = "Are you sure you want to two-way-sync {0} with {1} on the remote device? Files that do not exist in one of the locations will be added to the other, and older file versions will be overwritten.".format(self.path, self.target_path)
                 reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                 if reply == QtGui.QMessageBox.Yes:
-                    BTUtils.find_target_folder(self.client, self.target_path)
+                    utils.find_target_folder(self.client, self.target_path)
                     print "Syncing..."
-                    BTUtils.two_way_sync(self.client, self.path)
+                    utils.two_way_sync(self.client, self.path)
                 else: pass
                 disconn = self.client.disconnect()
                 if isinstance(disconn, PyOBEX.responses.Success):
@@ -613,9 +620,10 @@ class EmittingStream(QtCore.QObject):
 
 # Server window class
 class ServerWindow(QtGui.QDialog):
-    def __init__(self, parent=BluetoothSync):
+    def __init__(self, parent=SyncBlueMainWindow):
         super(ServerWindow, self).__init__(parent)
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        if not DEBUG:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
         self.setWindowTitle("Server Mode")
         self.initUI(parent)
 
@@ -632,7 +640,7 @@ class ServerWindow(QtGui.QDialog):
         self.buttonLayout.addWidget(self.abortServerButton)
         self.abortServerButton.connect(self.abortServerButton, QtCore.SIGNAL("clicked()"), self.abortServer)
         self.abortServerButton.setEnabled(False)
-    
+
     def normalOutputWritten(self, text):
         cursor = self.log.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
@@ -641,12 +649,12 @@ class ServerWindow(QtGui.QDialog):
         self.log.ensureCursorVisible()
 
     def startServer(self):
-        self.server = BTServerMode.SyncBlueServer()
+        self.server = eu.syncblue.server.SyncBlueServer()
         self.abortServerButton.setEnabled(True)
         self.startServerButton.setEnabled(False)
-        self.server_sock = self.server.start_service()          # Returns BluetoothSocket object
+        self.server_sock = self.server.start_service() # Returns BluetoothSocket object
         #server.serve(server_sock)
-    
+
     def abortServer(self):
         try:
             reply = QtGui.QMessageBox.question(self, "Server abort", "Are you sure you want to abort?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
@@ -658,14 +666,14 @@ class ServerWindow(QtGui.QDialog):
                     print "Server terminated."
             else:
                 pass
-        except IOError:                                         # If attempting to disconnect a disconnected socket
+        except IOError: # If attempting to disconnect a disconnected socket
             print "The connection has been lost. Terminating server..."
             self.server_sock.close()
             print "Server terminated."
 
 # Settings window class
 class SettingsWindow(QtGui.QDialog):
-    def __init__(self, parent=BluetoothSync):
+    def __init__(self, parent=SyncBlueMainWindow):
         super(SettingsWindow, self).__init__(parent)
         self.tempAddresses = loadAddresses()
         self.tempTimeout, self.path, self.target_path, self.mode, self.verbose = loadData()
@@ -760,11 +768,11 @@ class SettingsWindow(QtGui.QDialog):
         self.verticalLayout_2.addLayout(self.verboseLayout)
 
     def addDeviceAction(self):
-        # Ask for a name; run BTDevicefinder and save name, address in tempAddresses
+        # Ask for a name; run devicefinder and save name, address in tempAddresses
         name, ok = QtGui.QInputDialog.getText(self, 'Add new device', 'Find device by name:')
         if ok:
             try:
-                address = BTDeviceFinder.find_by_name(name)
+                address = devicefinder.find_by_name(name)
                 if address:
                     self.tempAddresses[name] = address
                     self.deleteList.addItem(name)
@@ -781,8 +789,8 @@ class SettingsWindow(QtGui.QDialog):
         self.deleteList.clear()
         for item in self.tempAddresses:
             self.deleteList.addItem(item)
-            print item   
- 
+            print item
+
     def okButtonAction(self):
         # Set mode to be saved
         if self.oneWaySyncButton.isChecked():
@@ -868,7 +876,7 @@ def main():
     app_icon = QtGui.QIcon()
     app_icon.addPixmap(QtGui.QPixmap("icon.ico"), QtGui.QIcon.Normal)
     app.setWindowIcon(app_icon)
-    window = BluetoothSync()
+    window = SyncBlueMainWindow()
     sys.exit(app.exec_())
 
 if __name__=='__main__':

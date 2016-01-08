@@ -1,7 +1,7 @@
-""" 
-Copyright 2015 Benjamin Alt 
+"""
+Copyright 2015 Benjamin Alt
 benjaminalt@arcor.de
-    
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -13,16 +13,16 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
 from __future__ import division
 import PyOBEX.client
 import PyOBEX.responses
-import BTDeviceFinder
+import devicefinder
 import re
-import os
+import os, sys
 import datetime
 import string
 
@@ -148,7 +148,7 @@ def recursive_two_way(client, path):
             if object["type"] == "folder":
                 if current_path != "":
                     current_path = os.path.join(current_path, object["name"])
-                else: 
+                else:
                     current_path = object["name"]
                 client.setpath(object["name"]) # Go into the folder
                 os.mkdir(os.path.join(path, current_path))
@@ -157,7 +157,7 @@ def recursive_two_way(client, path):
                 cutoff = current_path.rfind('\\')
                 if cutoff != -1:
                     current_path = current_path[:cutoff]
-                else: 
+                else:
                     current_path = ""
         if local_equiv:
             # If is file: Check date
@@ -224,7 +224,7 @@ def recursive_two_way(client, path):
         cutoff = current_path.rfind('\\')
         if cutoff != -1:
             current_path = current_path[:cutoff]
-        else: 
+        else:
             current_path = ""
     return
 
@@ -265,7 +265,13 @@ def make_filelist(path):
 
 # Returns list of dicts with objects' attributes (type, name, date) in the current folder on the target device
 def get_attributes_target(client):
-    headers, data = client.listdir()
+    try:
+        print client.listdir()
+        headers, data = client.listdir()
+    except TypeError as e:
+        print client.listdir()
+        print e
+        sys.exit(1)
     files_and_folders = data.splitlines()
     if "<parent-folder/>" in files_and_folders:
         files_and_folders = files_and_folders[4:len(files_and_folders)-1]
