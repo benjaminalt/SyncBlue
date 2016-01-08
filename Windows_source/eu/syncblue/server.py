@@ -23,24 +23,27 @@ from PyOBEX.common import OBEX_Version
 from PyOBEX import server
 from PyOBEX import requests
 from PyOBEX import responses
-from os.path import expanduser
+from PyOBEX import headers
+import serverutils as utils
+import os, sys
 
+# Reimplements PyOBEX.server.Server
 class SyncBlueServer(server.Server):
 
+    # Reimplementation of initializer (mainly for logging)
     def __init__(self, address = ""):
         print "Creating server object..."
         self.address = address
         self.max_packet_length = 0xffff
         self.obex_version = OBEX_Version()
         self.request_handler = requests.RequestHandler()
-        self.path = expanduser("~")                             # Default path: Home directory
+        self.path = os.path.expanduser("~")                         # Default path: Home directory
         print "Server object created."
 
-    # Re-implementation of start_service
-    def start_service(self, port = None):
-
-        if port is None:
-            port = 0
+    # Re-implementation of start_service that calls original implementation with parameters.
+    # Returns a BluetoothSocket instance.
+    # Side-effects: Advertises the service. Starts the server.
+    def start_service(self, port = 0):
 
         name = "SyncBlue Server"
         uuid = "F9EC7BC4-953C-11d2-984E-525400DC9E09"
@@ -50,14 +53,20 @@ class SyncBlueServer(server.Server):
         description = "SyncBlue"
         protocols = [OBEX_UUID]
 
-        # Returns a BluetoothSocket instance
-        return server.Server.start_service(
+        # Starts the server and returns a BluetoothSocket instance
+        socket = server.Server.start_service(
             self, port, name, uuid, service_classes, service_profiles,
             provider, description, protocols
             )
+        print "Before self.serve..."
+        sys.stdout.flush()
+        self.serve(socket)
+        return socket
 
     # Re-implementation of process_request: Called every time a request arrives
     def process_request(self, connection, request):
+
+        print(request)
 
         if isinstance(request, requests.Connect):
             print "Received connection request."
@@ -66,6 +75,10 @@ class SyncBlueServer(server.Server):
         elif isinstance(request, requests.Disconnect):
             print "Received disconnection request."
             self.disconnect(connection, request)
+
+        elif isinstance(request, requests.Get_Final):
+            print "Received get_final request."
+            self.get_final(connection, request)
 
         # Automatically rejects for now
         elif isinstance(request, requests.Put):
@@ -80,6 +93,17 @@ class SyncBlueServer(server.Server):
 
         else:
             self._reject(connection)
+
+    # Handles Get_Final request ("listdir")
+    def get_final(self, socket, request):
+        # I need: folder/file name, size (bytes), user-perm ("R"/"RW"), modified
+        # Existence of parent folder in xml-formatted string
+        xmlString = utils.get_files_xml(self.path)
+        header = headers.Connection_ID()
+        response = responses.Success(xmlString, header)
+        self.send_response(socket, response)
+
+        print "Get_final response sent successfully!"
 
     # Handles put request
     def put(self, socket, request):
@@ -109,5 +133,5 @@ class SyncBlueServer(server.Server):
                 socket.send(response.encode())
                 response.reset_headers()
 
-        # Always send at least one request.                 WHAT IS THIS ABOUT?
+        # Always send at least one request. SENDING RESPONSE INTO SOCKET
         socket.send(response.encode())

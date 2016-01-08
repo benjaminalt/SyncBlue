@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 import eu.syncblue.server
-import eu.syncblue.utils
+import eu.syncblue.clientutils as utils
 import eu.syncblue.devicefinder as devicefinder
 import bluetooth
 import os
@@ -37,6 +37,7 @@ import os
 import sys
 import ctypes
 
+DEBUG = True
 myappid = 'SyncBlue'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
@@ -91,8 +92,8 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
 
     def __init__(self):
         super(SyncBlueMainWindow, self).__init__()
-
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        if not DEBUG:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
         self.timeout, self.path, self.target_path, self.mode, self.verbose = loadData()
         self.addresses = loadAddresses()
         self.name = ""
@@ -115,7 +116,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.menubar = self.menuBar()
         self.launchServerMode = QtGui.QAction("Server Mode", self)
         self.launchServerMode.triggered.connect(self.launch_server)
-        self.launchServerMode.setEnabled(False)
+        # self.launchServerMode.setEnabled(False)
         self.menubar.addAction(self.launchServerMode)
         self.settingsAction = QtGui.QAction("Settings", self)
         self.settingsAction.triggered.connect(self.launch_settings)
@@ -244,10 +245,11 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
             self.disable_manual()
 
     @QtCore.pyqtSlot()
-    def launch_server(self, ):
+    def launch_server(self):
         self.serverWindow = ServerWindow(self)
         self.serverWindow.exec_()
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        if not DEBUG:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
 
     def launch_manual(self):
         self.disable_top()
@@ -284,14 +286,14 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.refresh()
 
     def open_folder(self):
-        contents = eu.syncblue.utils.get_attributes_target(self.client)
+        contents = utils.get_attributes_target(self.client)
         row = self.manualSync.row(self.manualSync.selectedItems()[0])
         if contents[row]["type"] == "folder":
             self.client.setpath(str(self.manualSync.selectedItems()[0].text()))
             self.refresh()
 
     def refresh(self):
-        contents = eu.syncblue.utils.get_attributes_target(self.client)
+        contents = utils.get_attributes_target(self.client)
         self.manualSync.clear()
         for item in contents:
             self.manualSync.addItem(item["name"])
@@ -311,7 +313,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
 
     def get(self):
         try:
-            attributes = eu.syncblue.utils.get_attributes_target(self.client)
+            attributes = utils.get_attributes_target(self.client)
             row = self.manualSync.row(self.manualSync.selectedItems()[0])
             if attributes[row]["type"] == "file":
                 headers, data = self.client.get(str(self.manualSync.selectedItems()[0].text()))
@@ -335,7 +337,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                                                              QtGui.QFileDialog.ShowDirsOnly))
                 self.client.setpath(str(self.manualSync.currentItem().text()))
                 print "Getting folder..."
-                eu.syncblue.utils.get_folder(self.client, self.tempPath, "")
+                utils.get_folder(self.client, self.tempPath, "")
                 self.client.setpath(to_parent = True)
                 print "Folder transferred."
             self.refresh()
@@ -374,10 +376,10 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         print "Filepath:", filepath
         if cutoff != 0:
             self.client.setpath(filepath[cutoff+1:], create_dir = True)
-            eu.syncblue.utils.one_way_sync(self.client, filepath, filepath[cutoff+1:])
+            utils.one_way_sync(self.client, filepath, filepath[cutoff+1:])
         else:
             self.client.setpath(filepath[cutoff:], create_dir = True)
-            eu.syncblue.utils.one_way_sync(self.client, filepath, filepath[cutoff:])
+            utils.one_way_sync(self.client, filepath, filepath[cutoff:])
         self.refresh()
 
     def newdir(self):
@@ -556,15 +558,15 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                     message = "Are you sure you want to one-way-sync {0} to the remote device? The contents of {1} on the remote device will be lost and overwritten by the new contents.".format(self.path, self.target_path)
                     reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.Yes:
-                        eu.syncblue.utils.find_target_folder(self.client, self.target_path)
+                        utils.find_target_folder(self.client, self.target_path)
                         print "Syncing..."
-                        eu.syncblue.utils.one_way_sync(self.client, self.path, self.target_path)
+                        utils.one_way_sync(self.client, self.path, self.target_path)
                     else: pass
                 else:
                     message = "Are you sure you want to one-way-sync {0} from the remote device? The contents of {1} on the computer will be lost and overwritten by the new contents.".format(self.target_path, self.path)
                     reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.Yes:
-                        eu.syncblue.utils.find_target_folder(self.client, self.target_path)
+                        utils.find_target_folder(self.client, self.target_path)
                         print "Syncing..."
                         try:
                             if os.path.exists(self.path):
@@ -579,7 +581,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                                 print "Disconnection failed."
                             return
                         os.mkdir(self.path)
-                        eu.syncblue.utils.get_folder(self.client, self.path, "")
+                        utils.get_folder(self.client, self.path, "")
                     else: pass
                 disconn = self.client.disconnect()
                 if isinstance(disconn, PyOBEX.responses.Success):
@@ -592,9 +594,9 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                 message = "Are you sure you want to two-way-sync {0} with {1} on the remote device? Files that do not exist in one of the locations will be added to the other, and older file versions will be overwritten.".format(self.path, self.target_path)
                 reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                 if reply == QtGui.QMessageBox.Yes:
-                    eu.syncblue.utils.find_target_folder(self.client, self.target_path)
+                    utils.find_target_folder(self.client, self.target_path)
                     print "Syncing..."
-                    eu.syncblue.utils.two_way_sync(self.client, self.path)
+                    utils.two_way_sync(self.client, self.path)
                 else: pass
                 disconn = self.client.disconnect()
                 if isinstance(disconn, PyOBEX.responses.Success):
@@ -620,7 +622,8 @@ class EmittingStream(QtCore.QObject):
 class ServerWindow(QtGui.QDialog):
     def __init__(self, parent=SyncBlueMainWindow):
         super(ServerWindow, self).__init__(parent)
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        if not DEBUG:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
         self.setWindowTitle("Server Mode")
         self.initUI(parent)
 
@@ -649,7 +652,7 @@ class ServerWindow(QtGui.QDialog):
         self.server = eu.syncblue.server.SyncBlueServer()
         self.abortServerButton.setEnabled(True)
         self.startServerButton.setEnabled(False)
-        self.server_sock = self.server.start_service()          # Returns BluetoothSocket object
+        self.server_sock = self.server.start_service() # Returns BluetoothSocket object
         #server.serve(server_sock)
 
     def abortServer(self):
@@ -663,7 +666,7 @@ class ServerWindow(QtGui.QDialog):
                     print "Server terminated."
             else:
                 pass
-        except IOError:                                         # If attempting to disconnect a disconnected socket
+        except IOError: # If attempting to disconnect a disconnected socket
             print "The connection has been lost. Terminating server..."
             self.server_sock.close()
             print "Server terminated."

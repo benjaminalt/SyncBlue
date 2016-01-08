@@ -22,7 +22,7 @@ import PyOBEX.client
 import PyOBEX.responses
 import devicefinder
 import re
-import os
+import os, sys
 import datetime
 import string
 
@@ -265,7 +265,13 @@ def make_filelist(path):
 
 # Returns list of dicts with objects' attributes (type, name, date) in the current folder on the target device
 def get_attributes_target(client):
-    headers, data = client.listdir()
+    try:
+        print client.listdir()
+        headers, data = client.listdir()
+    except TypeError as e:
+        print client.listdir()
+        print e
+        sys.exit(1)
     files_and_folders = data.splitlines()
     if "<parent-folder/>" in files_and_folders:
         files_and_folders = files_and_folders[4:len(files_and_folders)-1]
