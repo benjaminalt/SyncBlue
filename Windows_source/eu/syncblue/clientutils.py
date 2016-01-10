@@ -21,6 +21,7 @@ from __future__ import division
 import PyOBEX.client
 import PyOBEX.responses
 import devicefinder
+import bluetooth
 import re
 import os, sys
 import datetime
@@ -29,6 +30,15 @@ import string
 filelist = []
 current_path = ""
 folder_path = ""
+
+# Return a dict {name: address} about the devices in range
+def get_available_devices():
+    availableDevices = {}
+    addressList =  bluetooth.discover_devices()
+    for address in addressList:
+        availableDevices[bluetooth.lookup_name(address)] = address
+    print availableDevices
+    return availableDevices
 
 def find_target_folder(client, target_path):
     folderlist = []
