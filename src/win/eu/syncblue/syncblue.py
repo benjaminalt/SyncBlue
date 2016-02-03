@@ -639,7 +639,7 @@ class FileDialog(QtGui.QFileDialog):
 def main():
     app = QtGui.QApplication(sys.argv)
     app_icon = QtGui.QIcon()
-    app_icon.addPixmap(QtGui.QPixmap("icon.ico"), QtGui.QIcon.Normal)
+    app_icon.addPixmap(QtGui.QPixmap(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'icon.ico'))), QtGui.QIcon.Normal)
     app.setWindowIcon(app_icon)
     window = SyncBlueMainWindow()
     sys.exit(app.exec_())
