@@ -15,10 +15,14 @@ You can also get the released installers [here](https://github.com/benjaminalt/S
 
 1.  Fork/clone the repository.
 2.  Install dependencies:
-        python -m "pip install pybluez"
+
+         python -m "pip install pybluez"
+
     Clone [PyOBEX](https://bitbucket.org/dboddie/pyobex/) and install it:
+    
         cd pyobex
         python setup.py install
+
     Finally, download [PyQT4](https://www.riverbankcomputing.com/software/pyqt/download) for your platform and install it.
 3. You should be good to go!
 
