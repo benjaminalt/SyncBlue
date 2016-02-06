@@ -36,8 +36,9 @@ from PyQt4 import QtCore, QtGui
 import os
 import sys
 import ctypes
+from threading import Thread
 
-DEBUG = True
+DEBUG = False
 myappid = 'SyncBlue'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
@@ -120,7 +121,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.chooseName = QtGui.QListWidget(self)
         self.chooseName.setMaximumHeight(90)
         self.frame.nameSubLayout.addWidget(self.chooseName)
-        # Listwidget is populated at the end of initUI (after self.show())
+        # Listwidget is populated asynchronously at the end of initUI (after self.show())
         self.chooseName.connect(self.chooseName, QtCore.SIGNAL("itemSelectionChanged()"), self.nameSelected)
         self.frame.nameSubSubLayout = QtGui.QVBoxLayout()
         self.frame.nameSubLayout.addLayout(self.frame.nameSubSubLayout)
@@ -194,19 +195,28 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.frame.setLayout(self.frame.mainLayout)
 
         self.show()
-        # Populate device selection listwidget
-        self.populateDeviceSelection()
+        # Populate device selection listwidget in a new thread
+        deviceSelectionThread = Thread(target=self.populateDeviceSelection)
+        deviceSelectionThread.start()
 
     ############################### FUNCTIONS ##################################
 
     # For device selection listwidget: Populates/updates the list
     def populateDeviceSelection(self):
+        # Hide rescan button
+        self.rescanButton.setEnabled(False)
+        print "Scanning for devices..."
         if not (self.chooseName.count() == 0):
             self.chooseName.clear()
         self.availableDevices = utils.get_available_devices()
-        for name in self.availableDevices:
-            self.chooseName.addItem(name)
+        if self.availableDevices: # Error handling for "no BT adapter present" happens in utils.get_available_devices()
+          if len(self.availableDevices) == 0:
+            print "No Bluetooth device in range. Please ensure your Bluetooth device is discoverable."
+          for name in self.availableDevices:
+              self.chooseName.addItem(name)
         self.chooseName.setEnabled(True)
+        self.rescanButton.setEnabled(True)
+        print "Done."
 
     # For sync info (on the right of device selection): Return "readable" string for sync mode
     def getCurrentMode(self):
@@ -254,7 +264,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.container.setLayout(self.container.manualSyncLayout)
         self.frame.mainLayout.addWidget(self.container)
         self.manualSync = QtGui.QListWidget(self)
-        self.manualSync.itemDoubleClicked.connect(manualmode.openFolder)
+        self.manualSync.itemDoubleClicked.connect(lambda: manualmode.openFolder(self)) # Make this a callable with self as parameter (not QListWidgetItem object)
         self.container.manualSyncLayout.addWidget(self.manualSync)
         self.container.manualSyncSublayout = QtGui.QHBoxLayout()
         self.container.manualSyncLayout.addLayout(self.container.manualSyncSublayout)
@@ -272,13 +282,13 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.container.manualSyncSublayout.addWidget(self.newDirButton)
         self.manualDisconnButton = QtGui.QPushButton("Disconnect")
         self.container.manualSyncSublayout.addWidget(self.manualDisconnButton)
-        self.manualDisconnButton.clicked.connect(manualmode.disconnect)
-        self.getButton.clicked.connect(manualmode.get)
-        self.putFileButton.clicked.connect(manualmode.putFile)
-        self.putFolderButton.clicked.connect(manualmode.putFolder)
-        self.deleteButton.clicked.connect(manualmode.delete)
-        self.backButton.clicked.connect(manualmode.back)
-        self.newDirButton.clicked.connect(manualmode.newdir)
+        self.manualDisconnButton.clicked.connect(lambda: manualmode.disconnect(self))
+        self.getButton.clicked.connect(lambda: manualmode.get(self))
+        self.putFileButton.clicked.connect(lambda: manualmode.putFile(self))
+        self.putFolderButton.clicked.connect(lambda: manualmode.putFolder(self))
+        self.deleteButton.clicked.connect(lambda: manualmode.delete(self))
+        self.backButton.clicked.connect(lambda: manualmode.back(self))
+        self.newDirButton.clicked.connect(lambda: manualmode.newdir(self))
         manualmode.refresh(self)
 
     # If boolean True, preps GUI for manual mode. Undoes this if boolean False
@@ -289,6 +299,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
     def enableTop(self, boolean):
         self.nameLabel.setEnabled(boolean)
         self.chooseName.setEnabled(boolean)
+        self.rescanButton.setEnabled(boolean)
         self.syncButton.setEnabled(boolean)
         self.syncTypeLabel.setEnabled(boolean)
         self.syncType.setEnabled(boolean)
@@ -303,7 +314,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
 
     # Handles closing event
     def closeEvent(self, event):
-        reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? Devices & addresses will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? All settings will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             saveData(self.timeout, self.path, self.target_path, self.mode, self.verbose)
             event.accept()
@@ -312,7 +323,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
 
     # For quit button
     def quitAction(self):
-        reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? Devices & addresses will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? All settings will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             saveData(self.timeout, self.path, self.target_path, self.mode, self.verbose)
             QtCore.QCoreApplication.instance().quit()
@@ -340,7 +351,6 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
             # Find the services at the selected device
             deviceAddress = devicefinder.find_by_name(selectedDevice)
             services = bluetooth.find_service(address = deviceAddress)
-            print services
             selectedService = {}
             print "Available services:"
             for item in services:

@@ -48,4 +48,4 @@ def find_obex_port(addr):
 
 # Test client
 if __name__ == "__main__":
-    find_obex_port(find_by_name("Benjamin Alt's LG-D415"))
+    find_obex_port(find_by_name("NAME HERE"))

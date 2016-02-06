@@ -19,7 +19,7 @@ You can also get the released installers [here](https://github.com/benjaminalt/S
          python -m "pip install pybluez"
 
     Clone [PyOBEX](https://bitbucket.org/dboddie/pyobex/) and install it:
-    
+
         cd pyobex
         python setup.py install
 
@@ -30,11 +30,16 @@ You can also get the released installers [here](https://github.com/benjaminalt/S
 
 ### Release 0.3
 
-* Python client: Asynchronous searching for nearby devices when starting up the application (startup takes too long)
+* Python client: GUI improvements & automatic searching for nearby devices DONE
+* Python client: Asynchronous searching for nearby devices when starting up the application (startup takes too long) DONE
+* Python client: Error handling (no bluetooth adapter/no devices found on startup) DONE
+* Python client: Threaded sync operation
+* Python client: Threaded manual mode put/get/etc. operations + improve logging (or progress bar)
 
 ### Later releases
 
 * Fully implement SyncBlue server (OBEX server on devices which do not natively support OBEX)
+* Manual mode as tree view
 * Multithreaded sending (opening more than one Bluetooth connection to the same device at the same time)
 * More intelligent two-way-sync (DB to keep track of deleted & moved files to avoid duplication)
 * Connection via WiFi (FTP) either when on the same network or establishing Airdrop-style ad-hoc network

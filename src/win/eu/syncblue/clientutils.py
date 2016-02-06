@@ -33,12 +33,15 @@ folder_path = ""
 
 # Return a dict {name: address} about the devices in range
 def get_available_devices():
-    availableDevices = {}
-    addressList =  bluetooth.discover_devices()
-    for address in addressList:
-        availableDevices[bluetooth.lookup_name(address)] = address
-    print availableDevices
-    return availableDevices
+    try:
+      availableDevices = {}
+      addressList =  bluetooth.discover_devices()
+      for address in addressList:
+          availableDevices[bluetooth.lookup_name(address)] = address
+      return availableDevices
+    except IOError:
+      print "No Bluetooth adapter detected. Please ensure Bluetooth is enabled on this device."
+      return None
 
 def find_target_folder(client, target_path):
     folderlist = []

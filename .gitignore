@@ -46,4 +46,5 @@ Temporary Items
 *.pyc
 
 # Text files
-*.txt
+data.txt
+addresses.txt

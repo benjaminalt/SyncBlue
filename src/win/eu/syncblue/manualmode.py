@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from PyQt4 import QtGui, QtCore
 import syncblue
 import clientutils as utils
-import os
+import os, sys
+import PyOBEX
 
 def get(window):
     try:
@@ -114,7 +115,7 @@ def delete(window):
 
 def openFolder(window):
     contents = utils.get_attributes_target(window.client)
-    row = window.manualSync.row(window.manualSync.selectedItems()[0])
+    row = window.manualSync.row(window.manualSync.selectedItems()[0]) if len(window.manualSync.selectedItems()) > 0 else 0
     if contents[row]["type"] == "folder":
         window.client.setpath(str(window.manualSync.selectedItems()[0].text()))
         refresh(window)
@@ -135,7 +136,8 @@ def disconnect(window):
             print "Disconnection failed."
         window.enableTop(True)
         window.container.hide()
-    except (AttributeError, IOError):
+    except (AttributeError, IOError) as e:
+        print e
         print "The device is not available anymore."
         window.enableTop(True)
         window.container.hide()
