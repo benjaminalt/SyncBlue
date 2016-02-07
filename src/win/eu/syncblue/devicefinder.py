@@ -1,6 +1,6 @@
 """
-Copyright 2015 Benjamin Alt
-benjaminalt@arcor.de
+Copyright 2016 Benjamin Alt
+benjamin_alt@outlook.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,9 +15,32 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+################################################################################
+
+Collection of methods and a thread class for discovering bluetooth devices.
+
 """
 
 import bluetooth
+from PyQt4 import QtCore
+
+class DeviceDiscoveryThread(QtCore.QThread):
+    discoveryDone = QtCore.pyqtSignal(object)
+    def run(self):
+        availableDevices = get_available_devices()
+        self.discoveryDone.emit(availableDevices)
+
+# Return a dict {name: address} about the devices in range
+def get_available_devices():
+    try:
+      availableDevices = {}
+      addressList =  bluetooth.discover_devices()
+      for address in addressList:
+          availableDevices[bluetooth.lookup_name(address)] = address
+      return availableDevices
+    except IOError:
+      print "No Bluetooth adapter detected. Please ensure Bluetooth is enabled on this device."
+      return None
 
 def find_by_name(name):
     target_address = None
@@ -45,7 +68,3 @@ def find_obex_port(addr):
     else:
         print "No such service was detected."
         return
-
-# Test client
-if __name__ == "__main__":
-    find_obex_port(find_by_name("NAME HERE"))

@@ -19,14 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 from PyQt4 import QtGui, QtCore
-import syncblue
-import clientutils as utils
+import syncblue, autosync, obexfilebrowser
 import os, sys
-import PyOBEX
+import PyOBEX.responses
+import devicefinder
 
 def get(window):
     try:
-        attributes = utils.get_attributes_target(window.client)
+        attributes = obexfilebrowser.get_folder_attributes_remote(window.client)
         row = window.manualSync.row(window.manualSync.selectedItems()[0])
         if attributes[row]["type"] == "file":
             headers, data = window.client.get(str(window.manualSync.selectedItems()[0].text()))
@@ -114,14 +114,14 @@ def delete(window):
          refresh(window)
 
 def openFolder(window):
-    contents = utils.get_attributes_target(window.client)
+    contents = obexfilebrowser.get_folder_attributes_remote(window.client)
     row = window.manualSync.row(window.manualSync.selectedItems()[0]) if len(window.manualSync.selectedItems()) > 0 else 0
     if contents[row]["type"] == "folder":
         window.client.setpath(str(window.manualSync.selectedItems()[0].text()))
         refresh(window)
 
 def refresh(window):
-    contents = utils.get_attributes_target(window.client)
+    contents = obexfilebrowser.get_folder_attributes_remote(window.client)
     window.manualSync.clear()
     for item in contents:
         window.manualSync.addItem(item["name"])

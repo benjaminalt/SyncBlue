@@ -1,5 +1,5 @@
 """
-Copyright 2015 Benjamin Alt
+Copyright 2016 Benjamin Alt
 benjaminalt@arcor.de
 
 This program is free software: you can redistribute it and/or modify
@@ -15,33 +15,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+################################################################################
+
+Collection of methods for automatic (oneway/two-way) synchronization.
+
 """
 
 from __future__ import division
+import obexfilebrowser
 import PyOBEX.client
 import PyOBEX.responses
 import devicefinder
 import bluetooth
 import re
-import os, sys
+import os
 import datetime
 import string
 
 filelist = []
 current_path = ""
 folder_path = ""
-
-# Return a dict {name: address} about the devices in range
-def get_available_devices():
-    try:
-      availableDevices = {}
-      addressList =  bluetooth.discover_devices()
-      for address in addressList:
-          availableDevices[bluetooth.lookup_name(address)] = address
-      return availableDevices
-    except IOError:
-      print "No Bluetooth adapter detected. Please ensure Bluetooth is enabled on this device."
-      return None
 
 def find_target_folder(client, target_path):
     folderlist = []
@@ -133,7 +126,7 @@ def two_way_sync(client, path):
 
 def recursive_two_way(client, path):
     global current_path
-    remote_files = get_attributes_target(client)
+    remote_files = obexfilebrowser.get_folder_attributes_remote(client)
     if current_path == "":
         present_files = get_attributes_home(path)
     else:
@@ -246,7 +239,7 @@ def get_folder(client, path, folder_path): # Path is path *including* directory 
     if not data:
         return
     else:
-        target_things = get_attributes_target(client)
+        target_things = obexfilebrowser.get_folder_attributes_remote(client)
         for item in target_things:
             if item["type"] == "file":
                 headers, file = client.get(item["name"])
@@ -262,11 +255,12 @@ def get_folder(client, path, folder_path): # Path is path *including* directory 
 
 def get_data(path):
     if istext(path):
-        fo = open(os.path.normpath(path), "r")
-        return fo.read()
+        with open(os.path.normpath(path), "r") as fo:
+            data = fo.read()
     else:
-        fo = open(os.path.normpath(path), "rb")
-        return fo.read()
+        with open(os.path.normpath(path), "rb") as fo:
+            data = fo.read()
+    return data
 
 def make_filelist(path):
     for item in os.listdir(path):
@@ -275,41 +269,6 @@ def make_filelist(path):
             filelist.append(object)
         if os.path.isdir(object):
             make_filelist(object)
-
-# Returns list of dicts with objects' attributes (type, name, date) in the current folder on the target device
-def get_attributes_target(client):
-    try:
-        print client.listdir()
-        headers, data = client.listdir()
-    except TypeError as e:
-        print client.listdir()
-        print e
-        sys.exit(1)
-    files_and_folders = data.splitlines()
-    if "<parent-folder/>" in files_and_folders:
-        files_and_folders = files_and_folders[4:len(files_and_folders)-1]
-    else:
-        files_and_folders = files_and_folders[3:len(files_and_folders)-1]
-    datalist = []
-    folder_re = re.compile(r'folder name=".*?"', re.UNICODE)
-    file_re = re.compile(r'file name=".*?"', re.UNICODE)
-    datetime_re = re.compile(r'modified=".*?"', re.UNICODE)
-    for item in files_and_folders:
-        tempdict = {}
-        tempdict["type"] = "folder" if re.findall(folder_re, item) else "file"
-        if tempdict["type"] == "folder":
-            tempdict["name"] = re.sub('folder name="', '', re.findall(folder_re, item)[0]).rstrip('"')
-        elif tempdict["type"] == "file":
-            tempdict["name"] = re.sub('file name="', '', re.findall(file_re, item)[0]).rstrip('"')
-        else:
-            return
-        if (re.findall(datetime_re, item)):
-            temptime = re.sub('modified="','', re.findall(datetime_re, item)[0]).rstrip('"').replace("T", "").replace("Z", "")
-            tempdict["date"] = datetime.datetime.strptime(temptime, "%Y%m%d%H%M%S").replace(second = 0)
-        else:
-            tempdict["date"] = datetime.datetime.today()            # Fix this?
-        datalist.append(tempdict)
-    return datalist
 
 # Returns a list of dicts with objects' attributes (type, name, date) in the current folder on the home device
 def get_attributes_home(path):
@@ -360,15 +319,3 @@ def is_text(input):
     if float(len(t))/float(len(input)) > 0.30:
         return False
     return True
-
-# test client
-if __name__ == "__main__":
-    name = "Benjamin Alt's LG-D415"
-    address = BTDeviceFinder.find_by_name(name)
-    port = BTDeviceFinder.find_obex_port(address)
-    client = PyOBEX.client.BrowserClient(address, port)
-    client.connect()
-    client.setpath("Internal storage")
-    client.setpath("test")
-    two_way_sync(client, r"C:\Users\Benjamin Alt\Desktop")
-    client.disconnect()

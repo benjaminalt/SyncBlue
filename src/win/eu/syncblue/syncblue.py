@@ -20,17 +20,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+################################################################################
+
+Entry point to SyncBlue. Contains main GUI components & logic.
+
 """
 
-import server
-import clientutils as utils
-import devicefinder
-import manualmode
+import server, autosync, devicefinder, manualmode, connect
 import bluetooth
 import os
-import PyOBEX.client
-import PyOBEX.responses
-import PyOBEX.requests
+import PyOBEX.client, PyOBEX.responses, PyOBEX.requests
 import shutil
 from PyQt4 import QtCore, QtGui
 import os
@@ -51,7 +50,7 @@ def loadData():
     timeout = "60"
     path = str(os.path.expanduser("~"))
     target_path = "target path here"
-    mode = "one-way0"
+    mode = "manual"
     verbose = "1"
     if os.path.exists(os.path.join(module_path(), "data.txt")):
         fo = open(os.path.join(module_path(), "data.txt"), "r")
@@ -122,12 +121,12 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.chooseName.setMaximumHeight(90)
         self.frame.nameSubLayout.addWidget(self.chooseName)
         # Listwidget is populated asynchronously at the end of initUI (after self.show())
-        self.chooseName.connect(self.chooseName, QtCore.SIGNAL("itemSelectionChanged()"), self.nameSelected)
+        self.chooseName.itemClicked.connect(self.nameSelected)
         self.frame.nameSubSubLayout = QtGui.QVBoxLayout()
         self.frame.nameSubLayout.addLayout(self.frame.nameSubSubLayout)
         self.rescanButton = QtGui.QPushButton("Rescan")
         self.rescanButton.setEnabled(True)
-        self.rescanButton.connect(self.rescanButton, QtCore.SIGNAL("clicked()"), self.populateDeviceSelection)
+        self.rescanButton.clicked.connect(self.populateDeviceSelection)
         self.frame.nameSubSubLayout.addWidget(self.rescanButton)
         self.syncTypeLabel = QtGui.QLabel("Current mode:")
         self.syncTypeLabel.setAlignment(QtCore.Qt.AlignCenter)
@@ -138,7 +137,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.syncButton = QtGui.QPushButton("Sync")
         self.syncButton.setEnabled(False)
         self.frame.nameSubSubLayout.addWidget(self.syncButton)
-        self.syncButton.connect(self.syncButton, QtCore.SIGNAL("clicked()"), self.connect)
+        self.syncButton.clicked.connect(self.connect)
 
         ##################### FOLDER CONFIG ####################################
 
@@ -155,7 +154,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.frame.browseFolderLayout.addStretch(1)
         self.selectSyncFolderButton = QtGui.QPushButton("Select sync folder")
         self.frame.browseFolderLayout.addWidget(self.selectSyncFolderButton)
-        self.selectSyncFolderButton.connect(self.selectSyncFolderButton, QtCore.SIGNAL("clicked()"), self.browse)
+        self.selectSyncFolderButton.clicked.connect(self.browse)
         self.selectSyncFolderButton.setMaximumWidth(99)
         self.frame.folderLayout.addLayout(self.frame.browseFolderLayout)
 
@@ -167,7 +166,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.frame.setTargetLayout.addWidget(self.targetFolderText)
         self.selectTargetFolderButton = QtGui.QPushButton("Save")
         self.frame.setTargetLayout.addWidget(self.selectTargetFolderButton)
-        self.selectTargetFolderButton.connect(self.selectTargetFolderButton, QtCore.SIGNAL("clicked()"), self.setTarget)
+        self.selectTargetFolderButton.clicked.connect(self.setTarget)
         self.frame.folderLayout.addLayout(self.frame.setTargetLayout)
         self.folderGroupBox.setLayout(self.frame.folderLayout)
         self.frame.mainLayout.addWidget(self.folderGroupBox)
@@ -189,33 +188,38 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.frame.actionLayout.addStretch(2)
         self.frame.mainLayout.addLayout(self.frame.actionLayout)
         self.quitButton = QtGui.QPushButton("Cancel", self) # button is a child of window
-        self.quitButton.connect(self.quitButton, QtCore.SIGNAL('clicked()'),
-            self.quitAction)
+        self.quitButton.clicked.connect(self.quit)
         self.frame.actionLayout.addWidget(self.quitButton)
         self.frame.setLayout(self.frame.mainLayout)
 
+        ############################## OTHER ###################################
+
         self.show()
-        # Populate device selection listwidget in a new thread
-        deviceSelectionThread = Thread(target=self.populateDeviceSelection)
-        deviceSelectionThread.start()
+        # Populate device selection listwidget
+        self.populateDeviceSelection()
 
     ############################### FUNCTIONS ##################################
 
     # For device selection listwidget: Populates/updates the list
     def populateDeviceSelection(self):
-        # Hide rescan button
         self.rescanButton.setEnabled(False)
+        self.syncButton.setEnabled(False)
         print "Scanning for devices..."
         if not (self.chooseName.count() == 0):
             self.chooseName.clear()
-        self.availableDevices = utils.get_available_devices()
-        if self.availableDevices: # Error handling for "no BT adapter present" happens in utils.get_available_devices()
-          if len(self.availableDevices) == 0:
-            print "No Bluetooth device in range. Please ensure your Bluetooth device is discoverable."
-          for name in self.availableDevices:
-              self.chooseName.addItem(name)
+        self.deviceDiscoveryThread = devicefinder.DeviceDiscoveryThread()
+        self.deviceDiscoveryThread.discoveryDone.connect(self.onDeviceDiscoveryDone)
+        self.deviceDiscoveryThread.start()
+
+    def onDeviceDiscoveryDone(self, availableDevices):
+        if availableDevices:
+            if len(availableDevices) == 0:
+                print "No Bluetooth device in range. Please ensure your Bluetooth device is discoverable."
+            for name in availableDevices:
+                self.chooseName.addItem(name)
         self.chooseName.setEnabled(True)
         self.rescanButton.setEnabled(True)
+        self.syncButton.setEnabled(False)
         print "Done."
 
     # For sync info (on the right of device selection): Return "readable" string for sync mode
@@ -291,18 +295,18 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.newDirButton.clicked.connect(lambda: manualmode.newdir(self))
         manualmode.refresh(self)
 
-    # If boolean True, preps GUI for manual mode. Undoes this if boolean False
-    def enableManual(self, boolean):
-        self.folderGroupBox.setEnabled(not boolean)
+    # If enable True, preps GUI for manual mode. Undoes this if enable False
+    def enableManual(self, enable):
+        self.folderGroupBox.setEnabled(not enable)
 
-    # If boolean True, enables the top section of the GUI. Undoes this if boolean False
-    def enableTop(self, boolean):
-        self.nameLabel.setEnabled(boolean)
-        self.chooseName.setEnabled(boolean)
-        self.rescanButton.setEnabled(boolean)
-        self.syncButton.setEnabled(boolean)
-        self.syncTypeLabel.setEnabled(boolean)
-        self.syncType.setEnabled(boolean)
+    # If enable True, enables the top section of the GUI. Undoes this if enable False
+    def enableTop(self, enable):
+        self.nameLabel.setEnabled(enable)
+        self.chooseName.setEnabled(enable)
+        self.rescanButton.setEnabled(enable)
+        self.syncButton.setEnabled(enable)
+        self.syncTypeLabel.setEnabled(enable)
+        self.syncType.setEnabled(enable)
 
     # Handles log output
     def normalOutputWritten(self, text):
@@ -322,7 +326,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
             event.ignore()
 
     # For quit button
-    def quitAction(self):
+    def quit(self):
         reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? All settings will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             saveData(self.timeout, self.path, self.target_path, self.mode, self.verbose)
@@ -344,46 +348,32 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
 
     # Establish a connection to the selected device
     def connect(self):
+        self.enableTop(False)
+        self.connectThread = connect.ConnectionThread(self.getCurrentMode(), str(self.chooseName.selectedItems()[0].text()))
+        self.connectThread.connectDone.connect(self.onConnect)
+        self.connectThread.start()
+
+    def onConnect(self, client):
+        if not client:
+            message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer and that you select 'OBEX File Transfer' from the services menu."
+            QtGui.QMessageBox.warning(self, "Connection Error", message, QtGui.QMessageBox.Ok)
+            return
+        self.client = client
         try:
-            print "Current mode: {}".format(self.getCurrentMode())
-            selectedDevice = str(self.chooseName.selectedItems()[0].text())
-            print "Selected device: {}".format(selectedDevice)
-            # Find the services at the selected device
-            deviceAddress = devicefinder.find_by_name(selectedDevice)
-            services = bluetooth.find_service(address = deviceAddress)
-            selectedService = {}
-            print "Available services:"
-            for item in services:
-                print item["name"]
-                if "service-classes" in item and "1106" in item["service-classes"]:
-                    selectedService = item
-            if len(selectedService) == 0:
-                print "The device does not support OBEX File Transfer and/or is not running a SyncBlue server. Aborting..."
-                return
-            port = selectedService["port"]
-            print "Trying to connect to port {}...".format(port)
-            self.client = PyOBEX.client.BrowserClient(deviceAddress, port)
-            conn = self.client.connect()
-            if isinstance(conn, PyOBEX.responses.ConnectSuccess):
-                print "Connected successfully."
-            else:
-                print "Connection failed."
-                return
             if "one-way" in self.mode:
-                self.enableTop(False)
                 if "0" in self.mode:
                     message = "Are you sure you want to one-way-sync {0} to the remote device? The contents of {1} on the remote device will be lost and overwritten by the new contents.".format(self.path, self.target_path)
                     reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.Yes:
-                        utils.find_target_folder(self.client, self.target_path)
+                        autosync.find_target_folder(self.client, self.target_path)
                         print "Syncing..."
-                        utils.one_way_sync(self.client, self.path, self.target_path)
+                        autosync.one_way_sync(self.client, self.path, self.target_path)
                     else: pass
                 else:
                     message = "Are you sure you want to one-way-sync {0} from the remote device? The contents of {1} on the computer will be lost and overwritten by the new contents.".format(self.target_path, self.path)
                     reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.Yes:
-                        utils.find_target_folder(self.client, self.target_path)
+                        autosync.find_target_folder(self.client, self.target_path)
                         print "Syncing..."
                         try:
                             if os.path.exists(self.path):
@@ -398,7 +388,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                                 print "Disconnection failed."
                             return
                         os.mkdir(self.path)
-                        utils.get_folder(self.client, self.path, "")
+                        autosync.get_folder(self.client, self.path, "")
                     else: pass
                 disconn = self.client.disconnect()
                 if isinstance(disconn, PyOBEX.responses.Success):
@@ -407,13 +397,12 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
                     print "Disconnection failed."
                 self.enableTop(True)
             elif self.mode == "two-way":
-                self.enableTop(False)
                 message = "Are you sure you want to two-way-sync {0} with {1} on the remote device? Files that do not exist in one of the locations will be added to the other, and older file versions will be overwritten.".format(self.path, self.target_path)
                 reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                 if reply == QtGui.QMessageBox.Yes:
-                    utils.find_target_folder(self.client, self.target_path)
+                    autosync.find_target_folder(self.client, self.target_path)
                     print "Syncing..."
-                    utils.two_way_sync(self.client, self.path)
+                    autosync.two_way_sync(self.client, self.path)
                 else: pass
                 disconn = self.client.disconnect()
                 if isinstance(disconn, PyOBEX.responses.Success):
@@ -426,6 +415,8 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         except IOError:
             message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer and that you select 'OBEX File Transfer' from the services menu."
             QtGui.QMessageBox.warning(self, "Connection Error", message, QtGui.QMessageBox.Ok)
+            self.enableTop(True)
+            return
 
 # Helper class for StdOut IO
 class EmittingStream(QtCore.QObject):
@@ -452,10 +443,10 @@ class ServerWindow(QtGui.QDialog):
         self.mainLayout.addLayout(self.buttonLayout)
         self.startServerButton = QtGui.QPushButton("Launch server", self)
         self.buttonLayout.addWidget(self.startServerButton)
-        self.startServerButton.connect(self.startServerButton, QtCore.SIGNAL("clicked()"), self.startServer)
+        self.startServerButton.clicked.connect(self.startServer)
         self.abortServerButton = QtGui.QPushButton("Abort", self)
         self.buttonLayout.addWidget(self.abortServerButton)
-        self.abortServerButton.connect(self.abortServerButton, QtCore.SIGNAL("clicked()"), self.abortServer)
+        self.abortServerButton.clicked.connect(self.abortServer)
         self.abortServerButton.setEnabled(False)
 
     def normalOutputWritten(self, text):
@@ -527,14 +518,14 @@ class SettingsWindow(QtGui.QDialog):
         self.horizontalLayout_2.addWidget(self.timeoutLabel2)
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
         self.timeoutButton = QtGui.QPushButton("Set", self)
-        self.timeoutButton.connect(self.timeoutButton, QtCore.SIGNAL("clicked()"), self.timeoutSetting)
+        self.timeoutButton.clicked.connect(self.timeoutSetting)
         self.horizontalLayout_2.addWidget(self.timeoutButton)
         self.horizontalLayout_2.addStretch(2)
         # Sub-Layout for select sync mode
         self.groupBox = QtGui.QGroupBox("Set sync mode:")
         self.oneWaySyncLayout = QtGui.QHBoxLayout()
         self.oneWaySyncButton = QtGui.QRadioButton("One-way synchronization:")
-        self.oneWaySyncButton.connect(self.oneWaySyncButton, QtCore.SIGNAL("clicked()"), self.selectSyncMode)
+        self.oneWaySyncButton.clicked.connect(self.selectSyncMode)
         self.oneWaySyncLayout.addWidget(self.oneWaySyncButton)
         self.oneWaySyncLabel1 = QtGui.QLabel("PC >> Device")
         self.oneWaySyncLayout.addWidget(self.oneWaySyncLabel1)
@@ -544,9 +535,9 @@ class SettingsWindow(QtGui.QDialog):
         self.oneWaySyncLabel2 = QtGui.QLabel("Device >> PC")
         self.oneWaySyncLayout.addWidget(self.oneWaySyncLabel2)
         self.twoWaySyncButton = QtGui.QRadioButton("Two-way synchronization")
-        self.twoWaySyncButton.connect(self.twoWaySyncButton, QtCore.SIGNAL("clicked()"), self.selectSyncMode)
+        self.twoWaySyncButton.clicked.connect(self.selectSyncMode)
         self.manualSyncButton = QtGui.QRadioButton("Manual synchronization")
-        self.manualSyncButton.connect(self.manualSyncButton, QtCore.SIGNAL("clicked()"), self.selectSyncMode)
+        self.manualSyncButton.clicked.connect(self.selectSyncMode)
         self.setButtonChecked()
         self.selectSyncLayout = QtGui.QVBoxLayout()
         self.selectSyncLayout.addLayout(self.oneWaySyncLayout)
