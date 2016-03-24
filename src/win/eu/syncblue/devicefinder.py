@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ################################################################################
 
-Collection of methods and a thread class for discovering bluetooth devices.
+Collection of static methods and a thread class for discovering bluetooth devices.
 
 """
 
@@ -44,9 +44,7 @@ def get_available_devices():
 
 def find_by_name(name):
     target_address = None
-    print "Looking up nearby devices..."
     nearby_devices = bluetooth.discover_devices()
-    print "Looking for given name..."
     for bdaddr in nearby_devices:
         if name == bluetooth.lookup_name( bdaddr ):
             target_address = bdaddr

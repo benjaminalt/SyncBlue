@@ -28,7 +28,7 @@ import datetime
 # Returns list of dicts with objects' attributes (type, name, date) in the current folder on the target device
 def get_folder_attributes_remote(client):
     try:
-        print client.listdir()
+        # print client.listdir()
         headers, data = client.listdir()
     except TypeError as e:
         print client.listdir()

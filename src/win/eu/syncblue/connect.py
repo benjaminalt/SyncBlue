@@ -26,31 +26,31 @@ from PyQt4 import QtCore
 import bluetooth
 import PyOBEX.client, PyOBEX.responses
 
-class ConnectionThread(QtCore.QThread):
+# When run, attempts to connect to the specified device (see __init__) and emits
+# connectDone signal with BrowserClient object on success or None on failure.
+class ConnectThread(QtCore.QThread):
 
     connectDone = QtCore.pyqtSignal(object)
 
-    def __init__(self, mode, device):
+    def __init__(self, device):
         QtCore.QThread.__init__(self)
-        self.mode = mode
         self.device = device
 
     def run(self):
         try:
-            print "Current mode: {}".format(self.mode)
             print "Selected device: {}".format(self.device)
             # Find the services at the selected device
             deviceAddress = devicefinder.find_by_name(self.device)
             services = bluetooth.find_service(address = deviceAddress)
             selectedService = {}
-            print "Available services:"
+            #print "Available services:"
             for item in services:
-                print item["name"]
+                #print item["name"]
                 if "service-classes" in item and "1106" in item["service-classes"]:
                     selectedService = item
             if len(selectedService) == 0:
                 print "The device does not support OBEX File Transfer and/or is not running a SyncBlue server. Aborting..."
-                self.connectDone.emit(False)
+                self.connectDone.emit(None)
                 return
             port = selectedService["port"]
             print "Trying to connect to port {}...".format(port)

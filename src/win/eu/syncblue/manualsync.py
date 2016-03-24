@@ -17,13 +17,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+Contains static methods and a Thread class for manual sync with a remote device.
+
 """
 from PyQt4 import QtGui, QtCore
-import syncblue, autosync, obexfilebrowser
+import obexfilebrowser, autosync
 import os, sys
 import PyOBEX.responses
-import devicefinder
 
+# TODO: Do this in a separate thread
 def get(window):
     try:
         attributes = obexfilebrowser.get_folder_attributes_remote(window.client)
@@ -50,13 +52,14 @@ def get(window):
                                                          QtGui.QFileDialog.ShowDirsOnly))
             window.client.setpath(str(window.manualSync.currentItem().text()))
             print "Getting folder..."
-            utils.get_folder(window.client, window.tempPath, "")
+            autosync.get_folder(window.client, window.tempPath, "")
             window.client.setpath(to_parent = True)
             print "Folder transferred."
         refresh(window)
     except IndexError:
         print "Please select a file or folder."
 
+# TODO: Do this in a separate thread
 def putFile(window):
     filepath = (str(QtGui.QFileDialog.getOpenFileName(window, "Select File", window.tempPath)))
     if "/" in filepath:
@@ -65,8 +68,8 @@ def putFile(window):
     else:
         cutoff = 0
         window.tempPath = ""
-    print "Temp path:", window.tempPath
-    print "Filepath:", filepath
+    # print "Temp path:", window.tempPath
+    # print "Filepath:", filepath
     if os.path.isfile(filepath):
         fo = open(filepath, "rb")
         data = fo.read()
@@ -76,6 +79,7 @@ def putFile(window):
             window.client.put(filepath[cutoff:], data)
     refresh(window)
 
+# TODO: Do this in a separate thread
 def putFolder(window):
     filepath = str(QtGui.QFileDialog.getExistingDirectory(window, "Select Folder", window.tempPath, QtGui.QFileDialog.ShowDirsOnly))
     print "Filepath:", filepath
@@ -85,14 +89,14 @@ def putFolder(window):
     else:
         cutoff = 0
         window.tempPath = ""
-    print "Temp path:", window.tempPath
-    print "Filepath:", filepath
+    # print "Temp path:", window.tempPath
+    # print "Filepath:", filepath
     if cutoff != 0:
         window.client.setpath(filepath[cutoff+1:], create_dir = True)
-        utils.one_way_sync(window.client, filepath, filepath[cutoff+1:])
+        autosync.one_way_sync(window.client, filepath, filepath[cutoff+1:])
     else:
         window.client.setpath(filepath[cutoff:], create_dir = True)
-        utils.one_way_sync(window.client, filepath, filepath[cutoff:])
+        autosync.one_way_sync(window.client, filepath, filepath[cutoff:])
     refresh(window)
 
 def newdir(window):
@@ -101,7 +105,7 @@ def newdir(window):
     if ok:
         window.client.setpath(dirname, create_dir = True)
         window.client.setpath(to_parent = True)
-        window.refresh(window)()
+        refresh(window)
 
 def back(window):
     window.client.setpath(to_parent = True)

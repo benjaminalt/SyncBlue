@@ -25,8 +25,7 @@ from __future__ import division
 import obexfilebrowser
 import PyOBEX.client
 import PyOBEX.responses
-import devicefinder
-import bluetooth
+from PyQt4 import QtCore
 import re
 import os
 import datetime
@@ -86,17 +85,16 @@ def browse(client, target, folderlist, current_folders):
     current_folders = make_folder_list(contents)
     if target in current_folders:
         client.setpath(target)
-        print "Directory found."
     else:
         client.setpath(target, create_dir = True)
-        print "Directory not found. New directory created at the desired location."
+        print "Target directory not found. New directory created at the desired location."
 
 def one_way_sync(client, path, target_path):
     global filelist
     folderlist = target_path.split("/")
     target = folderlist[len(folderlist) - 1]
     client.setpath(to_parent = True)
-    client.put("debug.txt", "debug")
+    client.put("debug.txt", "debug") # Workaround: Due to some OBEX bug, must put something and delete it again to make some things work
     client.delete("debug.txt")
     client.delete(target)
     client.setpath(target, create_dir = True) # I am in empty target directory
@@ -113,6 +111,7 @@ def one_way_sync(client, path, target_path):
         index = len(item) - 2
         for i in range(0, index): # Go to place
             client.setpath(item[i], create_dir = True)
+        print "Syncing {}...".format(item[index])
         client.put(item[index], get_data(item[index + 1]))
         for i in range (0, index): # Go back to root
             client.setpath(to_parent = True)
@@ -120,7 +119,7 @@ def one_way_sync(client, path, target_path):
     client.setpath(to_parent = True)
 
 def two_way_sync(client, path):
-    client.put("debug.txt", "debug")
+    client.put("debug.txt", "debug") # Workaround: Due to some OBEX bug, must put something and delete it again to make some things work
     client.delete("debug.txt")
     recursive_two_way(client, path)
 
@@ -319,3 +318,71 @@ def is_text(input):
     if float(len(t))/float(len(input)) > 0.30:
         return False
     return True
+
+class OneWaySyncThread(QtCore.QThread):
+    syncDone = QtCore.pyqtSignal()
+    syncError = QtCore.pyqtSignal()
+    client = None
+    path = "" # The path on this machine
+    targetPath = "" # The path on the target device
+    push = True # Sync from this machine to the device or the other way around?
+
+    def __init__(self, client, path, targetPath, push=True):
+        QtCore.QThread.__init__(self)
+        self.client = client
+        self.path = path
+        self.targetPath = targetPath
+        self.push = push
+
+    def run(self):
+        try:
+            if self.push: # Sync from this machine to the target device
+                find_target_folder(self.client, self.targetPath)
+                print "Syncing..."
+                one_way_sync(self.client, self.path, self.targetPath)
+                self.syncDone.emit()
+            else: # Sync from the target device to this machine ("pull")
+                find_target_folder(self.client, self.targetPath)
+                print "Syncing..."
+                try:
+                    if os.path.exists(self.path):
+                        shutil.rmtree(self.path, ignore_errors = False)
+                except Exception:
+                    print "Error syncing folder on this PC. Make sure not to sync folders containing read-only files."
+                    print "Aborting..."
+                    disconn = self.client.disconnect()
+                    if isinstance(disconn, PyOBEX.responses.Success):
+                        print "Disconnected successfully."
+                    else:
+                        print "Disconnection failed."
+                    self.syncDone.emit()
+                    return
+                os.mkdir(self.path)
+                get_folder(self.client, self.path, "")
+                self.syncDone.emit()
+        except IOError:
+            self.syncError.emit()
+            return
+
+class TwoWaySyncThread(QtCore.QThread):
+    syncDone = QtCore.pyqtSignal()
+    syncError = QtCore.pyqtSignal()
+    client = None
+    path = ""
+    targetPath = ""
+
+    def __init__(self, client, path, targetPath):
+        QtCore.QThread.__init__(self)
+        self.client = client
+        self.path = path
+        self.targetPath = targetPath
+
+    def run(self):
+        try:
+            find_target_folder(self.client, self.targetPath)
+            print "Syncing..."
+            two_way_sync(self.client, self.path)
+            self.syncDone.emit()
+        except IOError:
+            self.syncError.emit()
+            return

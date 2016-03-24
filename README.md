@@ -28,16 +28,11 @@ You can also get the released installers [here](https://github.com/benjaminalt/S
 
 ## Still to do
 
-### Release 0.3
+### Release 0.4
 
-* Python client: GUI improvements & automatic searching for nearby devices DONE
-* Python client: Asynchronous searching for nearby devices when starting up the application (startup takes too long) DONE
-* Python client: Error handling (no bluetooth adapter/no devices found on startup) DONE
-* Python client: Threaded sync operation TEST IN AUTO MODE
-* Python client: Threaded manual mode put/get/etc. operations + improve logging (or progress bar)
-
-### Later releases
-
+* New logo?
+* Python client: Threaded manual mode put/get/etc. operations --> gray out put/get/etc. buttons while transferring OR use multiple BrowserClient
+instances
 * Fully implement SyncBlue server (OBEX server on devices which do not natively support OBEX)
 * Manual mode as tree view
 * Multithreaded sending (opening more than one Bluetooth connection to the same device at the same time)

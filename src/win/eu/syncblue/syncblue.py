@@ -2,11 +2,6 @@
 Copyright 2016 Benjamin Alt
 benjamin_alt@outlook.com
 
-syncblue.py
-
-Entry point to SyncBlue.
-Main GUI functions & application logic.
-
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -26,7 +21,7 @@ Entry point to SyncBlue. Contains main GUI components & logic.
 
 """
 
-import server, autosync, devicefinder, manualmode, connect
+import server, connect, autosync, manualsync, devicefinder
 import bluetooth
 import os
 import PyOBEX.client, PyOBEX.responses, PyOBEX.requests
@@ -35,7 +30,6 @@ from PyQt4 import QtCore, QtGui
 import os
 import sys
 import ctypes
-from threading import Thread
 
 DEBUG = False
 myappid = 'SyncBlue'
@@ -94,7 +88,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.menubar = self.menuBar()
         self.launchServerMode = QtGui.QAction("Server Mode", self)
         self.launchServerMode.triggered.connect(self.launch_server)
-        # self.launchServerMode.setEnabled(False)
+        self.launchServerMode.setEnabled(False)
         self.menubar.addAction(self.launchServerMode)
         self.settingsAction = QtGui.QAction("Settings", self)
         self.settingsAction.triggered.connect(self.launchSettings)
@@ -137,7 +131,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.syncButton = QtGui.QPushButton("Sync")
         self.syncButton.setEnabled(False)
         self.frame.nameSubSubLayout.addWidget(self.syncButton)
-        self.syncButton.clicked.connect(self.connect)
+        self.syncButton.clicked.connect(self.sync)
 
         ##################### FOLDER CONFIG ####################################
 
@@ -240,13 +234,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         else:
             self.textEdit.show()
             self.setGeometry(300, 300, 500, 500)
-        mode = self.mode.capitalize()
-        if "one-way" in self.mode:
-            if "0" in self.mode:
-                mode = "One-way, PC >> device"
-            else:
-                mode = "One-way, Device >> PC"
-        print "Sync mode:", mode
+        self.syncType.setText("<span style='font-weight:700;'>" + self.getCurrentMode() + "</span>")
         if self.mode == "manual":
             self.enableManual(True)
         else:
@@ -261,14 +249,14 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
             sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
 
     # When in manual mode, sets up UI for manual file sync
-    def launch_manual(self):
+    def prepManualGui(self):
         self.enableTop(False)
         self.container = QtGui.QWidget(self)
         self.container.manualSyncLayout = QtGui.QVBoxLayout()
         self.container.setLayout(self.container.manualSyncLayout)
         self.frame.mainLayout.addWidget(self.container)
         self.manualSync = QtGui.QListWidget(self)
-        self.manualSync.itemDoubleClicked.connect(lambda: manualmode.openFolder(self)) # Make this a callable with self as parameter (not QListWidgetItem object)
+        self.manualSync.itemDoubleClicked.connect(lambda: manualsync.openFolder(self)) # Make this a callable with self as parameter (not QListWidgetItem object)
         self.container.manualSyncLayout.addWidget(self.manualSync)
         self.container.manualSyncSublayout = QtGui.QHBoxLayout()
         self.container.manualSyncLayout.addLayout(self.container.manualSyncSublayout)
@@ -286,14 +274,14 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.container.manualSyncSublayout.addWidget(self.newDirButton)
         self.manualDisconnButton = QtGui.QPushButton("Disconnect")
         self.container.manualSyncSublayout.addWidget(self.manualDisconnButton)
-        self.manualDisconnButton.clicked.connect(lambda: manualmode.disconnect(self))
-        self.getButton.clicked.connect(lambda: manualmode.get(self))
-        self.putFileButton.clicked.connect(lambda: manualmode.putFile(self))
-        self.putFolderButton.clicked.connect(lambda: manualmode.putFolder(self))
-        self.deleteButton.clicked.connect(lambda: manualmode.delete(self))
-        self.backButton.clicked.connect(lambda: manualmode.back(self))
-        self.newDirButton.clicked.connect(lambda: manualmode.newdir(self))
-        manualmode.refresh(self)
+        self.manualDisconnButton.clicked.connect(lambda: manualsync.disconnect(self))
+        self.getButton.clicked.connect(lambda: manualsync.get(self))
+        self.putFileButton.clicked.connect(lambda: manualsync.putFile(self))
+        self.putFolderButton.clicked.connect(lambda: manualsync.putFolder(self))
+        self.deleteButton.clicked.connect(lambda: manualsync.delete(self))
+        self.backButton.clicked.connect(lambda: manualsync.back(self))
+        self.newDirButton.clicked.connect(lambda: manualsync.newdir(self))
+        manualsync.refresh(self)
 
     # If enable True, preps GUI for manual mode. Undoes this if enable False
     def enableManual(self, enable):
@@ -346,77 +334,58 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
     def setTarget(self):
         self.target_path = str(self.targetFolderText.text())
 
-    # Establish a connection to the selected device
-    def connect(self):
-        self.enableTop(False)
-        self.connectThread = connect.ConnectionThread(self.getCurrentMode(), str(self.chooseName.selectedItems()[0].text()))
+    # Start a sync with the selected device
+    def sync(self):
+        self.enableTop(False) # Disable sync and rescan buttons
+        self.connectThread = connect.ConnectThread(str(self.chooseName.selectedItems()[0].text()))
         self.connectThread.connectDone.connect(self.onConnect)
         self.connectThread.start()
 
+    # Gets called when connectThread finishes. Client is a PyOBEX.BrowserClient on success or None on failure
     def onConnect(self, client):
         if not client:
             message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer and that you select 'OBEX File Transfer' from the services menu."
             QtGui.QMessageBox.warning(self, "Connection Error", message, QtGui.QMessageBox.Ok)
-            return
-        self.client = client
-        try:
-            if "one-way" in self.mode:
-                if "0" in self.mode:
-                    message = "Are you sure you want to one-way-sync {0} to the remote device? The contents of {1} on the remote device will be lost and overwritten by the new contents.".format(self.path, self.target_path)
-                    reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-                    if reply == QtGui.QMessageBox.Yes:
-                        autosync.find_target_folder(self.client, self.target_path)
-                        print "Syncing..."
-                        autosync.one_way_sync(self.client, self.path, self.target_path)
-                    else: pass
-                else:
-                    message = "Are you sure you want to one-way-sync {0} from the remote device? The contents of {1} on the computer will be lost and overwritten by the new contents.".format(self.target_path, self.path)
-                    reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-                    if reply == QtGui.QMessageBox.Yes:
-                        autosync.find_target_folder(self.client, self.target_path)
-                        print "Syncing..."
-                        try:
-                            if os.path.exists(self.path):
-                                shutil.rmtree(self.path, ignore_errors = False)
-                        except Exception:
-                            print "Error syncing folder on this PC. Make sure not to sync folders containing read-only files."
-                            print "Aborting..."
-                            disconn = self.client.disconnect()
-                            if isinstance(disconn, PyOBEX.responses.Success):
-                                print "Disconnected successfully."
-                            else:
-                                print "Disconnection failed."
-                            return
-                        os.mkdir(self.path)
-                        autosync.get_folder(self.client, self.path, "")
-                    else: pass
-                disconn = self.client.disconnect()
-                if isinstance(disconn, PyOBEX.responses.Success):
-                    print "Disconnected successfully."
-                else:
-                    print "Disconnection failed."
-                self.enableTop(True)
-            elif self.mode == "two-way":
-                message = "Are you sure you want to two-way-sync {0} with {1} on the remote device? Files that do not exist in one of the locations will be added to the other, and older file versions will be overwritten.".format(self.path, self.target_path)
-                reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-                if reply == QtGui.QMessageBox.Yes:
-                    autosync.find_target_folder(self.client, self.target_path)
-                    print "Syncing..."
-                    autosync.two_way_sync(self.client, self.path)
-                else: pass
-                disconn = self.client.disconnect()
-                if isinstance(disconn, PyOBEX.responses.Success):
-                    print "Disconnected successfully."
-                else:
-                    print "Disconnection failed."
-                self.enableTop(True)
-            elif self.mode == "manual":
-                self.launch_manual()
-        except IOError:
-            message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer and that you select 'OBEX File Transfer' from the services menu."
-            QtGui.QMessageBox.warning(self, "Connection Error", message, QtGui.QMessageBox.Ok)
             self.enableTop(True)
             return
+        self.client = client
+        if "one-way" in self.mode:
+            if "0" in self.mode: # "Push" to remote device
+                message = "Are you sure you want to one-way-sync {0} to the remote device? The contents of {1} on the remote device will be lost and overwritten by the new contents.".format(self.path, self.target_path)
+                reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+                if reply == QtGui.QMessageBox.Yes:
+                    self.syncThread = autosync.OneWaySyncThread(self.client, self.path, self.target_path, push=True)
+            else: # "Pull" from remote device
+                message = "Are you sure you want to one-way-sync {0} from the remote device? The contents of {1} on the computer will be lost and overwritten by the new contents.".format(self.target_path, self.path)
+                reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+                if reply == QtGui.QMessageBox.Yes:
+                    self.syncThread = autosync.OneWaySyncThread(self.client, self.path, self.target_path, push=False)
+        elif self.mode == "two-way":
+            message = "Are you sure you want to two-way-sync {0} with {1} on the remote device? Files that do not exist in one of the locations will be added to the other, and older file versions will be overwritten.".format(self.path, self.target_path)
+            reply = QtGui.QMessageBox.question(self, "Attention: Possible loss of files", message, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                self.syncThread = autosync.TwoWaySyncThread(self.client, self.path, self.target_path)
+        elif self.mode == "manual":
+            self.prepManualGui()
+        if hasattr(self, 'syncThread'):
+            self.syncThread.syncDone.connect(self.onSyncDone)
+            self.syncThread.syncError.connect(self.onSyncError)
+            self.syncThread.start()
+
+    # Called when a sync operation finished. Disconnects from the device and re-enables the top panel.
+    def onSyncDone(self):
+        disconn = self.client.disconnect()
+        if isinstance(disconn, PyOBEX.responses.Success):
+            print "Disconnected successfully."
+        else:
+            print "Disconnection failed."
+        self.enableTop(True)
+
+    # Called when a sync operation resulted in an error. Prints an error message and re-enables the top panel.
+    def onSyncError(self):
+        message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer and that you select 'OBEX File Transfer' from the services menu."
+        QtGui.QMessageBox.warning(self, "Connection Error", message, QtGui.QMessageBox.Ok)
+        self.enableTop(True)
 
 # Helper class for StdOut IO
 class EmittingStream(QtCore.QObject):
