@@ -1,7 +1,7 @@
 # SyncBlue
 Software for peer-to-peer, cloudless, cross-platform file synchronization.
 
-Version 0.1 02/15/2015
+Version 0.3 03/24/2016
 
 
 SyncBlue is a cross-platform program that allows file and folder
