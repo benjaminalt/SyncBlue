@@ -23,20 +23,19 @@ import os
 import sys
 import py2exe
 
-sys.path.append(r"C:\Users\benjaminalt\Documents\Visual Studio 2013\Projects\SyncBlue\dlls")
+sys.path.append(r"C:\Users\benjaminalt\Desktop\build_SyncBlue\Microsoft.VC90.CRT")
 sys.path.append(r"C:\Python27\Lib\site-packages\PyQt4\plugins\imageformats")
 
-setup(windows = [{"script": r"\eu\syncblue\syncblue.py", "icon_resources": [(0, r"icon.ico")]}],
+setup(windows = [{"script": r"eu\syncblue\syncblue.py", "icon_resources": [(0, r"icon.ico")]}],
       options =  {
           "py2exe":
           {"packages":   ["PyOBEX", "bluetooth", "PyQt4"], "includes": ["sip"]
           , "bundle_files": 1,
-          "dll_excludes":['QtCore4.dll','QtGui4.dll'],}
+          "dll_excludes":['QtCore4.dll','QtGui4.dll', "MSVCP90.dll","libzmq.pyd","geos_c.dll","api-ms-win-core-string-l1-1-0.dll","api-ms-win-core-registry-l1-1-0.dll","api-ms-win-core-errorhandling-l1-1-1.dll","api-ms-win-core-string-l2-1-0.dll","api-ms-win-core-profile-l1-1-0.dll","api-ms-win*.dll","api-ms-win-core-processthreads-l1-1-2.dll","api-ms-win-core-libraryloader-l1-2-1.dll","api-ms-win-core-file-l1-2-1.dll","api-ms-win-security-base-l1-2-0.dll","api-ms-win-eventing-provider-l1-1-0.dll","api-ms-win-core-heap-l2-1-0.dll","api-ms-win-core-libraryloader-l1-2-0.dll","api-ms-win-core-localization-l1-2-1.dll","api-ms-win-core-sysinfo-l1-2-1.dll","api-ms-win-core-synch-l1-2-0.dll","api-ms-win-core-heap-l1-2-0.dll","api-ms-win-core-handle-l1-1-0.dll","api-ms-win-core-io-l1-1-1.dll","api-ms-win-core-com-l1-1-1.dll","api-ms-win-core-memory-l1-1-2.dll","api-ms-win-core-version-l1-1-1.dll","api-ms-win-core-version-l1-1-0.dll"]
+,}
           },
-      data_files = [("Microsoft.VC90.CRT", glob(os.path.normcase(r"C:\Users\benjaminalt\Documents\Visual Studio 2013\Projects\SyncBlue\dlls\*.*"))),
+      data_files = [("Microsoft.VC90.CRT", glob(os.path.normcase(r"C:\Users\benjaminalt\Desktop\build_SyncBlue\Microsoft.VC90.CRT\*.*"))),
               ('imageformats', [r'C:\Python27\Lib\site-packages\PyQt4\plugins\imageformats\qico4.dll']),
                ('.',[r'C:\Python27\Lib\site-packages\PyQt4\QtCore4.dll',
                 r'C:\Python27\Lib\site-packages\PyQt4\QtGui4.dll']),
-      ('.',[r"C:\Users\benjaminalt\Documents\Visual Studio 2013\Projects\SyncBlue\icon.ico",
-            r"C:\Users\benjaminalt\Documents\Visual Studio 2013\Projects\SyncBlue\network-bluetooth.ico",
-            "addresses.txt", "data.txt", "README.txt", "LICENSE.txt"])])
+      ('.',[r"icon.ico", r"C:\Users\benjaminalt\Desktop\Projects\SyncBlue\README.txt", r"C:\Users\benjaminalt\Desktop\Projects\SyncBlue\LICENSE.txt"])])

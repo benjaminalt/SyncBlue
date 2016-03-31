@@ -48,3 +48,7 @@ Temporary Items
 # Text files
 data.txt
 addresses.txt
+
+# Build stuff
+build/*
+dist/*

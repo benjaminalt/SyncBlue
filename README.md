@@ -6,9 +6,9 @@ synchronization via Bluetooth.
 It is open source and published under the GNU General Public License
 (GPL, http://www.gnu.org/licenses/gpl-3.0.txt).
 
-Current Version: 0.2
+Current Version: 0.3
 
-For installer downloads (binaries), installation instructions and further information on the releases visit www.syncblue.eu .
+For binary **installer downloads** (.exe, .pkg), installation instructions and further information on the releases visit www.syncblue.eu .
 You can also get the released installers [here](https://github.com/benjaminalt/SyncBlue/releases).
 
 ## Installing & running the source
