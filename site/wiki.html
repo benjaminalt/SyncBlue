@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html><head>
-    
+
     <!-- Google Analytics -->
 
 <script>
@@ -36,7 +36,8 @@
             <nav id="navigation">
                 <nav class="subnav" id="first"><a href="../index.html">Home</a></nav
                 >|<nav class="subnav"><a href="wiki.html">Wiki</a></nav
-                >|<nav class="subnav"><a href="downloads.html">Download</a></nav>
+                >|<nav class="subnav"><a href="downloads.html">Download</a></nav
+                >|<nav class="subnav"><a href="links.html">Links</a></nav>
             </nav>
         </div>
         <div id="content">
@@ -69,17 +70,11 @@
                     <p>Most (but not all) target devices will only accept an incoming Bluetooth
                     connection if the device has been paired with your computer. Therefore, before
                     you attempt to establish a connection through SyncBlue, ensure that your
-                    computer and your device are paired.
-                    
-                    When SyncBlue is launched for the first time, the dropdown menu next to the
-                    "add device" button will be empty. To add a device, simply click "add device" and
-                    enter the Bluetooth name (not MAC address) of the target device when prompted.
-                    SyncBlue will save all added devices fur future use.
-                    Devices can always be added and removed in the settings.
-                    
-                    Select the device to connect to from the dropdown menu and click on "find services".
-                    If your device supports OBEX file transfer, "OBEX File Transfer" should appear
-                    in the box. If it does not, make sure Bluetooth is turned on both on your computer
+                    computer and your device are paired. Most often though, you will be prompted to pair automatically
+                    when attempting to sync with SyncBlue.
+
+                    Select the device to connect to from the box and click on "Sync".
+                    If it an error occurs, make sure Bluetooth is turned on both on your computer
                     and on the target device, that the target device is within range ( < 5 m.)
                     and that your target device is discoverable and can accept incoming connection requests.
                     If the problem persists, your target device does not support OBEX file transfer
@@ -103,7 +98,7 @@
                     <h5>Manual sync</h5>
                     <p>Enables the user to browse the files and folders on the remote device. Supports "put",
                     "get", "delete" and "make folder" operations.</p>
-                    
+
                     <a name="macos"><h2>Mac OS X</h2></a>
                     <h3>System requirements</h3>
                     <p>Mac OS X 10.5.x (or higher)</p>
@@ -113,27 +108,27 @@
                     <h4>Connecting to a device</h4>
                     <p>Before you attempt to establish a connection through SyncBlue, ensure that your
                     computer and your device are paired. If not, SyncBlue will automatically ask for pairing.<br>
-                    
+
                     After clicking on the button "connect", you should be able to see  a list with all the devices already paired with your system.
                     If your device does not show in the list, please allow a couple of seconds and scroll down to the end. You should be see your device next to the button 'pair'.
                     <br>
                     Select the device to connect to and click on "Browse".<br>
-                    If your device supports OBEX file transfer, a new window will appear displaying all files/folders located in the root of your target device. 
+                    If your device supports OBEX file transfer, a new window will appear displaying all files/folders located in the root of your target device.
                     If it does not, a description should appear at the bottom of the window prompting "Your device does not have the necessary services". This means that your device does not support OBEX or it does not correcly advertise it.
-                    <br>Please note that Windows releases do not advertise OBEX file transfer and are thus (still) not suitable as target devices unless you run a server to advertise OBEX. 
+                    <br>Please note that Windows releases do not advertise OBEX file transfer and are thus (still) not suitable as target devices unless you run a server to advertise OBEX.
                     <br>Also please make sure that the target device is within range ( < 5 m.) and that your target device is discoverable and can accept incoming connection requests.
                     If the problem persists, your target device does not support OBEX file transfer and is incompatible with SyncBlue. </p>
                     <h4>SyncBlue Browser Interface</h4>
                     <h5>Browse into your target device</h5>
                     <p>Once you establish a connection between your computer and the target device, a new browser window will automatically appear. If the target destination folder (by default '/') is not empty, you should be able to see a list of all files/folders contained in the root folder.
-                    If you double click on a selected folder, you should be able to browse into its content. You can also use the button 'Home' to return to the root folder or the button 'Up' to move up into the directory.</p> 
+                    If you double click on a selected folder, you should be able to browse into its content. You can also use the button 'Home' to return to the root folder or the button 'Up' to move up into the directory.</p>
                     <h5>Manually receive/send/delete files</h5>
                     <p>To receive a file from your target device, please first select it on the list and click on the button 'receive'. A new window should appear asking for a destination location on your computer. A progress bar should appear on the bottom of the window displaying the Estimated Transfer Time and the remaining size to transfer.
                     To send a file to your target device, you should click on the button 'Send'. A new window should appear to choose the file to send. By clicking on 'send', a progress bar should appear displaying the Estimated Time for the transfer and the remaining bytes to send.
-                    To delete a file, please select it first, then click on the button 'delete'.</p>  
+                    To delete a file, please select it first, then click on the button 'delete'.</p>
                     <h4>Synchronization</h4>
                     <p>Feature coming soon.</p>
-                    
+
                     <a name="source"><h2>Source code</h2></a>
                     <h3>Python 2.7 for Windows XP/7/8/8.1, Linux</h3>
                     <p>It is possible to run the program on other platforms directly from
@@ -158,7 +153,7 @@
         </div>
         <div id="footer">
             <div id="copyright">
-                <p>Copyright 2015 Benjamin Alt &amp Olivier Sirello</p>
+                <p>Copyright 2016 Benjamin Alt &amp Olivier Sirello</p>
             </div>
             <div id="contactEtc"><a href="contact.html">Contact</a>|<a href="https://github.com/benjaminalt/syncblue">SyncBlue on GitHub</a>
             </div>
