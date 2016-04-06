@@ -22,7 +22,6 @@ CONTENTS
 3. Known bugs & limitations
 
 
-
 1. INSTALLATION
 
     1.1. Microsoft Windows (7 or higher)
@@ -99,7 +98,6 @@ CONTENTS
 
             Enables the user to browse the files and folders on the remote device. Supports "put",
             "get", "delete" and "make folder" operations.
-
 
 
 3. KNOWN BUGS & LIMITATIONS

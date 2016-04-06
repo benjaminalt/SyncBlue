@@ -17,7 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 import os
-DEBUG = True
+import datetime
+
+DEBUG = False
 
 # Returns XML string for response to "listdir"-type requests
 def get_files_xml(path):
@@ -41,7 +43,8 @@ def get_files_and_dirs(path):
         type = "folder" if os.path.isdir(filepath) else "file"
         size = str(os.stat(filepath).st_size)
         user_perm = get_permissions(filepath)
-        modified = os.path.getmtime(filepath)
+        modified = datetime.datetime.fromtimestamp(os.path.getmtime(filepath))
+        modified = modified.strftime("%Y%m%dT%H%M%SZ")
         newEntry = {
             "name": name,
             "type": type,
@@ -62,7 +65,7 @@ def get_permissions(filepath):
     if os.access(filepath, os.W_OK):
         perms += "W"
     return perms
- 
+
 def debug(message):
     if DEBUG:
         print "[serverutils.py]: {}".format(message)

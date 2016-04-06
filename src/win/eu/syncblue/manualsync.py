@@ -37,13 +37,8 @@ def get(window):
             filepath = str(QtGui.QFileDialog.getExistingDirectory(window, "Save as...", window.tempPath, QtGui.QFileDialog.ShowDirsOnly))
             print "Getting file..."
             print "Saving file at: ", filepath
-            if window.tempPath:
-                fo = open(os.path.join(filepath, attributes[row]["name"]), "wb")
-            else:
-                print "Please specify a valid path. \n GET aborted."
-                return
-            fo.write(data)
-            fo.close()
+            with open(os.path.join(filepath, attributes[row]["name"]), "wb") as fo:
+                fo.write(data)
             print "File transferred."
         else:
             window.tempPath = str(QtGui.QFileDialog.getExistingDirectory(window,

@@ -30,11 +30,15 @@ You can also get the released installers [here](https://github.com/benjaminalt/S
 
 ### Release 0.4
 
+* Fully implement SyncBlue server (OBEX server on devices which do not natively support OBEX)
+    * GET operation
+    * Threading
+    * Stability (always be able to abort)
+
+### Later releases
 * New logo?
 * Python client: Threaded manual mode put/get/etc. operations --> gray out put/get/etc. buttons while transferring OR use multiple BrowserClient
 instances
-* Fully implement SyncBlue server (OBEX server on devices which do not natively support OBEX)
 * Manual mode as tree view
-* Multithreaded sending (opening more than one Bluetooth connection to the same device at the same time)
-* More intelligent two-way-sync (DB to keep track of deleted & moved files to avoid duplication)
+* More intelligent two-way-sync (avoid duplication for deleted/moved files)
 * Connection via WiFi (FTP) either when on the same network or establishing Airdrop-style ad-hoc network
