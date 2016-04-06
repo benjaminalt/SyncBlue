@@ -31,7 +31,7 @@ import os
 import sys
 import ctypes
 
-DEBUG = False
+DEBUG = True
 myappid = 'SyncBlue'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
@@ -71,7 +71,6 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.availableDevices = {}
         self.name = ""
         self.current_services = []
-        self.tempPath = os.path.expanduser("~")
         self.initUI()
 
     # Restore sys.stdout
@@ -88,7 +87,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.menubar = self.menuBar()
         self.launchServerMode = QtGui.QAction("Server Mode", self)
         self.launchServerMode.triggered.connect(self.launch_server)
-        self.launchServerMode.setEnabled(False)
+        self.launchServerMode.setEnabled(True)
         self.menubar.addAction(self.launchServerMode)
         self.settingsAction = QtGui.QAction("Settings", self)
         self.settingsAction.triggered.connect(self.launchSettings)
@@ -426,11 +425,11 @@ class ServerWindow(QtGui.QDialog):
         self.log.ensureCursorVisible()
 
     def startServer(self):
-        self.server = eu.syncblue.server.SyncBlueServer()
+        self.server = server.SyncBlueServer()
         self.abortServerButton.setEnabled(True)
         self.startServerButton.setEnabled(False)
         self.server_sock = self.server.start_service() # Returns BluetoothSocket object
-        #server.serve(server_sock)
+        self.server.serve(self.server_sock)
 
     def abortServer(self):
         try:
