@@ -21,7 +21,7 @@ Collection of methods and a thread class for connecting to a Bluetooth device.
 
 """
 
-import devicefinder
+import devicefinder, syncblue
 from PyQt4 import QtCore
 import bluetooth
 import PyOBEX.client, PyOBEX.responses
@@ -43,9 +43,11 @@ class ConnectThread(QtCore.QThread):
             deviceAddress = devicefinder.find_by_name(self.device)
             services = bluetooth.find_service(address = deviceAddress)
             selectedService = {}
-            #print "Available services:"
+            if syncblue.DEBUG:
+                print "Available services:"
             for item in services:
-                #print item["name"]
+                if syncblue.DEBUG:
+                    print item["name"]
                 if "service-classes" in item and "1106" in item["service-classes"]:
                     selectedService = item
             if len(selectedService) == 0:

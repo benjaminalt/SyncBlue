@@ -108,20 +108,26 @@ def newdir(window):
         refresh(window)
 
 def back(window):
-    window.client.setpath(to_parent = True)
+    response = window.client.setpath(to_parent = True)
+    if not isinstance(response, PyOBEX.responses.Success):
+        reply = QtGui.QMessageBox.warning(window, "Failure", "The setpath request failed, probably because of bad permissions.", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
     refresh(window)
 
 def delete(window):
      reply = QtGui.QMessageBox.question(window, "Delete", "Are you sure you want to delete permanently?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
      if reply == QtGui.QMessageBox.Yes:
-         window.client.delete(str(window.manualSync.currentItem().text()))
+         response = window.client.delete(str(window.manualSync.currentItem().text()))
+         if not isinstance(response, PyOBEX.responses.Success):
+             reply = QtGui.QMessageBox.warning(window, "Failure", "The delete request failed, probably because of bad permissions.", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
          refresh(window)
 
 def openFolder(window):
     contents = obexfilebrowser.get_folder_attributes_remote(window.client)
     row = window.manualSync.row(window.manualSync.selectedItems()[0]) if len(window.manualSync.selectedItems()) > 0 else 0
     if contents[row]["type"] == "folder":
-        window.client.setpath(str(window.manualSync.selectedItems()[0].text()))
+        response = window.client.setpath(str(window.manualSync.selectedItems()[0].text()))
+        if not isinstance(response, PyOBEX.responses.Success):
+            reply = QtGui.QMessageBox.warning(window, "Failure", "Could not open folder, probably because of bad permissions.", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
         refresh(window)
 
 def refresh(window):
