@@ -63,35 +63,33 @@ def putFile(window):
     else:
         cutoff = 0
         window.tempPath = ""
-    # print "Temp path:", window.tempPath
-    # print "Filepath:", filepath
     if os.path.isfile(filepath):
-        fo = open(filepath, "rb")
-        data = fo.read()
-        if cutoff != 0:
-            window.client.put(filepath[cutoff+1:], data)
-        else:
-            window.client.put(filepath[cutoff:], data)
+        with open(filepath, "rb") as fo:
+            data = fo.read()
+            if cutoff != 0:
+                window.client.put(filepath[cutoff+1:], data)
+            else:
+                window.client.put(filepath[cutoff:], data)
     refresh(window)
 
 # TODO: Do this in a separate thread
 def putFolder(window):
     filepath = str(QtGui.QFileDialog.getExistingDirectory(window, "Select Folder", window.tempPath, QtGui.QFileDialog.ShowDirsOnly))
-    print "Filepath:", filepath
-    if "\\" in filepath:
-        cutoff = filepath.rfind("\\")
-        window.tempPath = filepath[:cutoff]
-    else:
-        cutoff = 0
-        window.tempPath = ""
-    # print "Temp path:", window.tempPath
-    # print "Filepath:", filepath
-    if cutoff != 0:
-        window.client.setpath(filepath[cutoff+1:], create_dir = True)
-        autosync.one_way_sync(window.client, filepath, filepath[cutoff+1:])
-    else:
-        window.client.setpath(filepath[cutoff:], create_dir = True)
-        autosync.one_way_sync(window.client, filepath, filepath[cutoff:])
+    if filepath:
+        if "\\" in filepath:
+            cutoff = filepath.rfind("\\")
+            window.tempPath = filepath[:cutoff]
+        else:
+            cutoff = 0
+            window.tempPath = ""
+        # print "Temp path:", window.tempPath
+        # print "Filepath:", filepath
+        if cutoff != 0:
+            window.client.setpath(filepath[cutoff+1:], create_dir = True)
+            autosync.one_way_sync(window.client, filepath, filepath[cutoff+1:])
+        else:
+            window.client.setpath(filepath[cutoff:], create_dir = True)
+            autosync.one_way_sync(window.client, filepath, filepath[cutoff:])
     refresh(window)
 
 def newdir(window):

@@ -22,18 +22,14 @@ Entry point to SyncBlue. Contains main GUI components & logic.
 """
 
 import server, connect, autosync, manualsync, devicefinder
-import bluetooth
-import os
 import PyOBEX.client, PyOBEX.responses, PyOBEX.requests
-import shutil
 from PyQt4 import QtCore, QtGui
 import os
 import sys
 import ctypes
 
-DEBUG = True
-myappid = 'SyncBlue'
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+DEBUG = False
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('SyncBlue')
 
 def module_path():
     if hasattr(sys, "frozen"):
@@ -71,6 +67,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         self.availableDevices = {}
         self.name = ""
         self.current_services = []
+        self.tempPath = os.path.expanduser("~")
         self.initUI()
 
     # Restore sys.stdout
@@ -396,6 +393,9 @@ class EmittingStream(QtCore.QObject):
 
 # Server window class
 class ServerWindow(QtGui.QDialog):
+
+    abortServerSig = QtCore.pyqtSignal()
+
     def __init__(self, parent=SyncBlueMainWindow):
         super(ServerWindow, self).__init__(parent)
         if not DEBUG:
@@ -425,11 +425,12 @@ class ServerWindow(QtGui.QDialog):
         self.log.ensureCursorVisible()
 
     def startServer(self):
-        self.server = server.SyncBlueServer()
+        self.serverThread = server.ServerThread()
         self.abortServerButton.setEnabled(True)
         self.startServerButton.setEnabled(False)
-        self.server_sock = self.server.start_service() # Returns BluetoothSocket object
-        self.server.serve(self.server_sock)
+        self.serverThread.serverDone.connect(self.onServerDone)
+        self.abortServerSig.connect(self.serverThread.abort, QtCore.Qt.QueuedConnection)
+        self.serverThread.start()
 
     def abortServer(self):
         try:
@@ -437,15 +438,19 @@ class ServerWindow(QtGui.QDialog):
             if reply == QtGui.QMessageBox.Yes:
                 self.startServerButton.setEnabled(True)
                 self.abortServerButton.setEnabled(False)
-                if (self.server):
-                    self.server.disconnect(self.server_sock, PyOBEX.requests.Disconnect)
+                if (self.serverThread):
+                    self.abortServerSig.emit()
                     print "Server terminated."
             else:
                 pass
         except IOError: # If attempting to disconnect a disconnected socket
             print "The connection has been lost. Terminating server..."
-            self.server_sock.close()
+            self.serverThread.terminate()
             print "Server terminated."
+
+    def onServerDone(self):
+        self.startServerButton.setEnabled(True)
+        self.abortServerButton.setEnabled(False)
 
 # Settings window class
 class SettingsWindow(QtGui.QDialog):

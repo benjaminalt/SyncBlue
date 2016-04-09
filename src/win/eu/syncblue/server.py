@@ -1,6 +1,6 @@
 """
-Copyright 2015 Benjamin Alt
-benjaminalt@arcor.de
+Copyright 2016 Benjamin Alt
+benjamin_alt@outlook.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ from PyOBEX import server
 from PyOBEX import requests
 from PyOBEX import responses
 from PyOBEX import headers
+from PyQt4 import QtCore
 import serverutils as utils
 import os, sys, shutil
 
@@ -32,19 +33,19 @@ class SyncBlueServer(server.Server):
 
     # Reimplementation of initializer (mainly for logging)
     def __init__(self, address = ""):
-        print "Creating server object..."
         self.address = address
         self.max_packet_length = 0xffff
         self.obex_version = OBEX_Version()
         self.request_handler = requests.RequestHandler()
         self.path = os.path.expanduser("~")                         # Default path: Home directory
-        print "Server object created."
 
     # Re-implementation of start_service that calls original implementation with parameters.
     # Returns a BluetoothSocket instance.
     # Side-effects: Advertises the service.
     # TODO: Do this in own Thread
     def start_service(self, port = 0):
+
+        print "In start_service..."
 
         name = "SyncBlue Server"
         uuid = "F9EC7BC4-953C-11d2-984E-525400DC9E09"
@@ -59,6 +60,8 @@ class SyncBlueServer(server.Server):
             self, port, name, uuid, service_classes, service_profiles,
             provider, description, protocols
             )
+
+        print "Start_service done."
         return socket
 
     # Re-implementation of process_request: Called every time a request arrives
@@ -76,10 +79,6 @@ class SyncBlueServer(server.Server):
         elif isinstance(request, requests.Disconnect):
             print "Received disconnection request."
             self.disconnect(connection, request)
-
-        elif isinstance(request, requests.Get_Final):
-            print "Received get_final request."
-            self.get_final(connection, request)
 
         elif isinstance(request, requests.Put_Final):
             print "Received put_final request."
@@ -101,20 +100,13 @@ class SyncBlueServer(server.Server):
         else:
             self._reject(connection)
 
-    # Handles Get_Final request ("listdir")
-    def get_final(self, socket, request):
-        xmlString = utils.get_files_xml(self.path)
-        responseHeaders = [headers.End_Of_Body(data=xmlString, encoded=False)]
-        response = responses.Success(header_data=responseHeaders)
-        self.send_response(socket, response)
-        print "Get_final response sent successfully!"
-
     # Handles Put_Final request ("delete")
     def put_final(self, socket, request):
         for header in request.header_data:
             if isinstance(header, headers.Name):
-                name = header.decode()
+                name = header.decode().strip().replace("\x00", "")
                 filename = os.path.join(self.path, name)
+                print "Trying to delete {}".format(filename)
                 if (os.path.exists(filename)):
                     try:
                         if os.path.isfile(filename):
@@ -181,8 +173,42 @@ class SyncBlueServer(server.Server):
                 print "Type {}".format(type)
 
         filepath = os.path.abspath(os.path.join(self.path, name))
-        # TODO: Get a file
-        self.send_response(socket, responses.Success())
+
+        if os.path.isdir(filepath) or type == "x-obex/folder-listing":
+            xmlString = utils.get_files_xml(filepath)
+            responseHeaders = [headers.End_Of_Body(data=xmlString, encoded=False)]
+            response = responses.Success(header_data=responseHeaders)
+            self.send_response(socket, response)
+            print "Get_final response sent successfully!"
+
+        else:
+            max_length = self.remote_info.max_packet_length
+            # TODO: Get a file
+            if not os.path.isfile(filepath):
+                print "Requested file does not exist. Sending failure response..."
+                self.send_response(socket, responses.Bad_Request())
+                print "Failure response sent."
+                return
+            with open(filepath, "rb") as fo:
+                file_data = fo.read()
+            # Send the file data.
+            # The optimum size is the maximum packet length accepted by the
+            # remote device minus three bytes for the header ID and length
+            # minus three bytes for the request.
+            optimum_size = max_length - 3 - 3
+
+            i = 0
+            while i < len(file_data):
+                data = file_data[i:i+optimum_size]
+                i += len(data)
+                if i < len(file_data): # Will send more file data, so send Continue response
+                    response = responses.Continue()
+                    response.add_header(headers.Body(data, False), max_length)
+                    self.send_response(socket, response)
+                else:
+                    response = responses.Continue()
+                    response.add_header(headers.End_Of_Body(data, False), max_length)
+                    self.send_response(socket, response)
 
     # Set the current directory
     def set_path(self, socket, request):
@@ -193,17 +219,24 @@ class SyncBlueServer(server.Server):
                     if not header_content: # Set path to parent directory
                         temp_path = os.path.abspath(os.path.join(self.path, os.pardir))
                         os.listdir(temp_path) # Will throw WindowsError if permission denied
-                        self.path = temp_path
+                    elif not os.path.exists(os.path.join(self.path, header_content)): # Create new directory and change dir there
+                        temp_path = os.path.join(self.path, header_content)
+                        os.mkdir(os.path.join(temp_path))
                     else: # Set new current path
                         temp_path = os.path.join(self.path, header_content)
-                        os.listdir(temp_path)
-                        self.path = temp_path # Will throw WindowsError if permission denied
+                        os.listdir(temp_path) # Will throw WindowsError if permission denied
+                    self.path = temp_path
             self.send_response(socket, responses.Success())
             print "Set_path response sent successfully!"
         except WindowsError:
             print "Permission denied on setpath request. Sending error response..."
             self.send_response(socket, responses.Forbidden())
             print "Set_path error response sent successfully!"
+
+    def disconnect(self, socket, request):
+        response = responses.Success()
+        self.send_response(socket, response)
+        self.connected = False
 
     def send_response(self, socket, response, header_list = []):
 
@@ -214,9 +247,33 @@ class SyncBlueServer(server.Server):
             if response.add_header(header_list[0], self._max_length()):
                 header_list.pop(0)
             else:
-                # Need to call send repeatedly until all data is sent!!!
-                socket.send(response.encode())
+                socket.sendall(response.encode())
                 response.reset_headers()
 
-        # Always send at least one request. SENDING RESPONSE INTO SOCKET
+        # Always send at least one request.
         socket.send(response.encode())
+
+class ServerThread(QtCore.QThread):
+
+    serverDone = QtCore.pyqtSignal()
+
+    # Creates a new server thread. Param server is a SynBlueServer object
+    def __init__(self):
+        QtCore.QThread.__init__(self)
+        self.server = SyncBlueServer()
+        self.socket = None
+
+    @QtCore.pyqtSlot()
+    def abort(self):
+        try:
+            self.server.stop_service(self.socket)
+        except IOError:
+            self.socket.close()
+        self.serverDone.emit()
+        self.terminate()
+
+    def run(self):
+        self.socket = self.server.start_service()
+        print "Calling server.serve..."
+        self.server.serve(self.socket)
+        self.serverDone.emit()
