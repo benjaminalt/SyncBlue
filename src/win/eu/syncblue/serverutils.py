@@ -19,8 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import datetime
 
-DEBUG = False
-
 # Returns XML string for response to "listdir"-type requests
 def get_files_xml(path):
     filesAndDirs = get_files_and_dirs(path)
@@ -31,7 +29,6 @@ def get_files_xml(path):
         if type(item) is dict:
             xmlString += '<{} name="{}" size="{}" user-perm="{}" modified="{}"/>\r\n'.format(item["type"], item["name"], item["size"], item["user-perm"], item["modified"])
     xmlString += '</folder-listing>\r\n'
-    debug("XML String: {}".format(xmlString))
     return xmlString
 
 # Returns list of dictionaries with relevant information about files and
@@ -65,7 +62,3 @@ def get_permissions(filepath):
     if os.access(filepath, os.W_OK):
         perms += "W"
     return perms
-
-def debug(message):
-    if DEBUG:
-        print "[serverutils.py]: {}".format(message)

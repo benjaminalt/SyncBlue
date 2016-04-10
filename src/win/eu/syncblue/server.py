@@ -26,6 +26,7 @@ from PyOBEX import responses
 from PyOBEX import headers
 from PyQt4 import QtCore
 import serverutils as utils
+from syncblue import debug
 import os, sys, shutil
 
 # Reimplements PyOBEX.server.Server
@@ -42,10 +43,7 @@ class SyncBlueServer(server.Server):
     # Re-implementation of start_service that calls original implementation with parameters.
     # Returns a BluetoothSocket instance.
     # Side-effects: Advertises the service.
-    # TODO: Do this in own Thread
     def start_service(self, port = 0):
-
-        print "In start_service..."
 
         name = "SyncBlue Server"
         uuid = "F9EC7BC4-953C-11d2-984E-525400DC9E09"
@@ -60,8 +58,7 @@ class SyncBlueServer(server.Server):
             self, port, name, uuid, service_classes, service_profiles,
             provider, description, protocols
             )
-
-        print "Start_service done."
+        print "Done."
         return socket
 
     # Re-implementation of process_request: Called every time a request arrives
@@ -73,28 +70,28 @@ class SyncBlueServer(server.Server):
             print header.decode()
 
         if isinstance(request, requests.Connect):
-            print "Received connection request."
+            debug("Received connection request.")
             self.connect(connection, request)
 
         elif isinstance(request, requests.Disconnect):
-            print "Received disconnection request."
+            debug("Received disconnection request.")
             self.disconnect(connection, request)
 
         elif isinstance(request, requests.Put_Final):
-            print "Received put_final request."
+            debug("Received put_final request.")
             self.put_final(connection, request)
 
         elif isinstance(request, requests.Put):
-            print "Received put request."
+            debug("Received put request.")
             self.put(connection, request)
 
         elif isinstance(request, requests.Set_Path):
-            print "Received setpath request."
+            debug("Received setpath request.")
             self.set_path(connection, request)
-            print "New path: ", self.path
+            debug("New path: ", self.path)
 
         elif isinstance(request, requests.Get):
-            print "Received get request."
+            debug("Received get request.")
             self.get(connection, request)
 
         else:
@@ -106,7 +103,7 @@ class SyncBlueServer(server.Server):
             if isinstance(header, headers.Name):
                 name = header.decode().strip().replace("\x00", "")
                 filename = os.path.join(self.path, name)
-                print "Trying to delete {}".format(filename)
+                print "Deleting {}...".format(filename)
                 if (os.path.exists(filename)):
                     try:
                         if os.path.isfile(filename):
@@ -114,15 +111,15 @@ class SyncBlueServer(server.Server):
                         else:
                             shutil.rmtree(filename)
                         self.send_response(socket, responses.Success())
-                        print "Response sent successfully!"
+                        debug("Response sent successfully!")
                     except IOError:
-                        print "An error occurred deleting the item. Sending failure response..."
+                        print "An error occurred deleting the item."
                         self.send_response(socket, responses.Forbidden())
-                        print "Failure response sent successfully!"
+                        debug("Failure response sent successfully!")
                 else:
-                    print "Requested item does not exist. Sending failure response..."
+                    print "Requested item does not exist."
                     self.send_response(socket, responses.Bad_Request())
-                    print "Failure response sent successfully!"
+                    debug("Failure response sent successfully!")
 
     # Handles put request
     def put(self, socket, request):
@@ -153,11 +150,11 @@ class SyncBlueServer(server.Server):
             with open(filepath, "wb") as outfile:
                 outfile.write(body)
             self.send_response(socket, responses.Success())
-            print "Response sent successfully!"
+            debug("Response sent successfully!")
         except IOError:
-            print "IOError occurred. Sending failure response..."
+            print "IOError occurred."
             self.send_response(socket, responses.Forbidden())
-            print "Failure response sent successfully!"
+            debug("Failure response sent successfully!")
 
     # Handles get request
     def get(self, socket, request):
@@ -166,11 +163,11 @@ class SyncBlueServer(server.Server):
         for header in request.header_data:
             if isinstance(header, headers.Name):
                 name = header.decode().strip("\x00")
-                print "Receiving request for {}".format(name)
+                debug("Receiving get request for {}".format(name))
 
             elif isinstance(header, headers.Type):
                 type = header.decode().strip("\x00")
-                print "Type {}".format(type)
+                debug("Type {}".format(type))
 
         filepath = os.path.abspath(os.path.join(self.path, name))
 
@@ -179,15 +176,14 @@ class SyncBlueServer(server.Server):
             responseHeaders = [headers.End_Of_Body(data=xmlString, encoded=False)]
             response = responses.Success(header_data=responseHeaders)
             self.send_response(socket, response)
-            print "Get_final response sent successfully!"
-
+            debug("Get_final response sent successfully!")
         else:
+            print "Received get request for {}...".format(filepath)
             max_length = self.remote_info.max_packet_length
-            # TODO: Get a file
             if not os.path.isfile(filepath):
-                print "Requested file does not exist. Sending failure response..."
+                print "Requested file does not exist."
                 self.send_response(socket, responses.Bad_Request())
-                print "Failure response sent."
+                debug("Failure response sent.")
                 return
             with open(filepath, "rb") as fo:
                 file_data = fo.read()
@@ -227,11 +223,11 @@ class SyncBlueServer(server.Server):
                         os.listdir(temp_path) # Will throw WindowsError if permission denied
                     self.path = temp_path
             self.send_response(socket, responses.Success())
-            print "Set_path response sent successfully!"
+            debug("Set_path response sent successfully!")
         except WindowsError:
-            print "Permission denied on setpath request. Sending error response..."
+            print "Permission denied on setpath request."
             self.send_response(socket, responses.Forbidden())
-            print "Set_path error response sent successfully!"
+            debug("Set_path error response sent successfully!")
 
     def disconnect(self, socket, request):
         response = responses.Success()
@@ -274,6 +270,5 @@ class ServerThread(QtCore.QThread):
 
     def run(self):
         self.socket = self.server.start_service()
-        print "Calling server.serve..."
         self.server.serve(self.socket)
         self.serverDone.emit()

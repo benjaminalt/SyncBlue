@@ -57,6 +57,10 @@ def saveData(timeout, path, target_path, mode, verbose):
     fo.write("{0}\n{1}\n{2}\n{3}\n{4}".format(str(timeout), str(path), str(target_path), str(mode), str(verbose)))
     fo.close()
 
+def debug(message):
+    if DEBUG:
+        print message
+
 class SyncBlueMainWindow(QtGui.QMainWindow):
 
     def __init__(self):
