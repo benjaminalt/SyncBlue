@@ -17,57 +17,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ################################################################################
 
-Entry point to SyncBlue. Contains main GUI components & logic.
+SyncBlue main window.
 
 """
 
-import server, connect, autosync, manualsync, devicefinder
+from eu.syncblue.server import server
+from eu.syncblue.client import connect, autosync, manualsync, devicefinder
+import utils, settings
 import PyOBEX.client, PyOBEX.responses, PyOBEX.requests
 from PyQt4 import QtCore, QtGui
-import os
-import sys
-import ctypes
+import os, sys, ctypes
 
-DEBUG = False
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('SyncBlue')
-
-def module_path():
-    if hasattr(sys, "frozen"):
-        return os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding( )))
-    return os.path.dirname(unicode(__file__, sys.getfilesystemencoding( )))
-
-def loadData():
-    timeout = "60"
-    path = str(os.path.expanduser("~"))
-    target_path = "target path here"
-    mode = "manual"
-    verbose = "1"
-    if os.path.exists(os.path.join(module_path(), "data.txt")):
-        fo = open(os.path.join(module_path(), "data.txt"), "r")
-        timeout = fo.readline().rstrip()
-        path = fo.readline().rstrip()
-        target_path = fo.readline().rstrip()
-        mode = fo.readline().rstrip()
-        verbose = fo.readline().rstrip()
-        fo.close()
-    return timeout, path, target_path, mode, verbose
-
-def saveData(timeout, path, target_path, mode, verbose):
-    fo = open(os.path.join(module_path(), "data.txt"), "w")
-    fo.write("{0}\n{1}\n{2}\n{3}\n{4}".format(str(timeout), str(path), str(target_path), str(mode), str(verbose)))
-    fo.close()
-
-def debug(message):
-    if DEBUG:
-        print message
 
 class SyncBlueMainWindow(QtGui.QMainWindow):
 
     def __init__(self):
         super(SyncBlueMainWindow, self).__init__()
-        if not DEBUG:
-            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
-        self.timeout, self.path, self.target_path, self.mode, self.verbose = loadData()
+        if not utils.DEBUG:
+            sys.stdout = utils.EmittingStream(textWritten=self.normalOutputWritten)
+        self.timeout, self.path, self.target_path, self.mode, self.verbose = utils.loadData()
         self.availableDevices = {}
         self.name = ""
         self.current_services = []
@@ -224,9 +193,9 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
     # For menubar: Launches the settings window
     @QtCore.pyqtSlot()
     def launchSettings(self):
-        self.settingsWindow = SettingsWindow(self)
+        self.settingsWindow = settings.SettingsWindow(self)
         self.settingsWindow.exec_()
-        self.timeout, self.path, self.target_path, self.mode, self.verbose = loadData()
+        self.timeout, self.path, self.target_path, self.mode, self.verbose = utils.loadData()
         self.statusBar().showMessage("Ready")
         if self.verbose == "0":
             self.textEdit.hide()
@@ -243,10 +212,10 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
     # For menubar: Launches the server
     @QtCore.pyqtSlot()
     def launch_server(self):
-        self.serverWindow = ServerWindow(self)
+        self.serverWindow = server.ServerWindow(self)
         self.serverWindow.exec_()
-        if not DEBUG:
-            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        if not utils.DEBUG:
+            sys.stdout = utils.EmittingStream(textWritten=self.normalOutputWritten)
 
     # When in manual mode, sets up UI for manual file sync
     def prepManualGui(self):
@@ -308,7 +277,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? All settings will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
-            saveData(self.timeout, self.path, self.target_path, self.mode, self.verbose)
+            utils.saveData(self.timeout, self.path, self.target_path, self.mode, self.verbose)
             event.accept()
         else:
             event.ignore()
@@ -317,7 +286,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
     def quit(self):
         reply = QtGui.QMessageBox.question(self, "Quit", "Are you sure you want to quit? All settings will be saved.", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
-            saveData(self.timeout, self.path, self.target_path, self.mode, self.verbose)
+            utils.saveData(self.timeout, self.path, self.target_path, self.mode, self.verbose)
             QtCore.QCoreApplication.instance().quit()
 
     # Enables the sync button when device name is selected
@@ -386,241 +355,3 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
         message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer and that you select 'OBEX File Transfer' from the services menu."
         QtGui.QMessageBox.warning(self, "Connection Error", message, QtGui.QMessageBox.Ok)
         self.enableTop(True)
-
-# Helper class for StdOut IO
-class EmittingStream(QtCore.QObject):
-
-    textWritten = QtCore.pyqtSignal(str)
-
-    def write(self, text):
-        self.textWritten.emit(str(text))
-
-# Server window class
-class ServerWindow(QtGui.QDialog):
-
-    abortServerSig = QtCore.pyqtSignal()
-
-    def __init__(self, parent=SyncBlueMainWindow):
-        super(ServerWindow, self).__init__(parent)
-        if not DEBUG:
-            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
-        self.setWindowTitle("Server Mode")
-        self.initUI(parent)
-
-    def initUI(self, parent):
-        self.mainLayout = QtGui.QVBoxLayout(self)
-        self.log = QtGui.QTextEdit(self)
-        self.mainLayout.addWidget(self.log)
-        self.buttonLayout = QtGui.QHBoxLayout()
-        self.mainLayout.addLayout(self.buttonLayout)
-        self.startServerButton = QtGui.QPushButton("Launch server", self)
-        self.buttonLayout.addWidget(self.startServerButton)
-        self.startServerButton.clicked.connect(self.startServer)
-        self.abortServerButton = QtGui.QPushButton("Abort", self)
-        self.buttonLayout.addWidget(self.abortServerButton)
-        self.abortServerButton.clicked.connect(self.abortServer)
-        self.abortServerButton.setEnabled(False)
-
-    def normalOutputWritten(self, text):
-        cursor = self.log.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
-        cursor.insertText(text)
-        self.log.setTextCursor(cursor)
-        self.log.ensureCursorVisible()
-
-    def startServer(self):
-        self.serverThread = server.ServerThread()
-        self.abortServerButton.setEnabled(True)
-        self.startServerButton.setEnabled(False)
-        self.serverThread.serverDone.connect(self.onServerDone)
-        self.abortServerSig.connect(self.serverThread.abort, QtCore.Qt.QueuedConnection)
-        self.serverThread.start()
-
-    def abortServer(self):
-        try:
-            reply = QtGui.QMessageBox.question(self, "Server abort", "Are you sure you want to abort?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if reply == QtGui.QMessageBox.Yes:
-                self.startServerButton.setEnabled(True)
-                self.abortServerButton.setEnabled(False)
-                if (self.serverThread):
-                    self.abortServerSig.emit()
-                    print "Server terminated."
-            else:
-                pass
-        except IOError: # If attempting to disconnect a disconnected socket
-            print "The connection has been lost. Terminating server..."
-            self.serverThread.terminate()
-            print "Server terminated."
-
-    def onServerDone(self):
-        self.startServerButton.setEnabled(True)
-        self.abortServerButton.setEnabled(False)
-
-# Settings window class
-class SettingsWindow(QtGui.QDialog):
-    def __init__(self, parent=SyncBlueMainWindow):
-        super(SettingsWindow, self).__init__(parent)
-        self.tempTimeout, self.path, self.target_path, self.mode, self.verbose = loadData()
-        self.setWindowTitle("Settings")
-        self.initUI(parent)
-
-    def initUI(self, parent):
-        # Main grid layout
-        self.gridLayoutWidget = QtGui.QWidget(self)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(20, 10, 561, 471))
-        self.gridLayout = QtGui.QGridLayout(self.gridLayoutWidget)
-        # Left vertical layout
-        self.verticalLayout = QtGui.QVBoxLayout()
-        self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
-        # OK / Cancel button box
-        self.settingsButtonBox = QtGui.QDialogButtonBox(self.gridLayoutWidget)
-        self.settingsButtonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.settingsButtonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
-        self.settingsButtonBox.accepted.connect(self.okButtonAction)
-        self.settingsButtonBox.rejected.connect(self.reject)
-        self.gridLayout.addWidget(self.settingsButtonBox, 1, 1, 1, 1)
-        # Right vertical layout
-        self.verticalLayout_2 = QtGui.QVBoxLayout()
-        self.gridLayout.addLayout(self.verticalLayout_2, 0, 1)
-        self.verticalLayout_2.setAlignment(QtCore.Qt.AlignTop)
-        # Sub-layout for timeout function
-        self.horizontalLayout_2 = QtGui.QHBoxLayout()
-        self.timeoutLabel = QtGui.QLabel("Timeout after", self.gridLayoutWidget)
-        self.horizontalLayout_2.addWidget(self.timeoutLabel)
-        self.timeoutField = QtGui.QLineEdit(self.gridLayoutWidget)
-        self.timeoutField.setMinimumSize(QtCore.QSize(4, 0))
-        self.timeoutField.setText(self.tempTimeout)
-        self.horizontalLayout_2.addWidget(self.timeoutField)
-        self.timeoutLabel2 = QtGui.QLabel("seconds", self.gridLayoutWidget)
-        self.horizontalLayout_2.addWidget(self.timeoutLabel2)
-        self.verticalLayout_2.addLayout(self.horizontalLayout_2)
-        self.timeoutButton = QtGui.QPushButton("Set", self)
-        self.timeoutButton.clicked.connect(self.timeoutSetting)
-        self.horizontalLayout_2.addWidget(self.timeoutButton)
-        self.horizontalLayout_2.addStretch(2)
-        # Sub-Layout for select sync mode
-        self.groupBox = QtGui.QGroupBox("Set sync mode:")
-        self.oneWaySyncLayout = QtGui.QHBoxLayout()
-        self.oneWaySyncButton = QtGui.QRadioButton("One-way synchronization:")
-        self.oneWaySyncButton.clicked.connect(self.selectSyncMode)
-        self.oneWaySyncLayout.addWidget(self.oneWaySyncButton)
-        self.oneWaySyncLabel1 = QtGui.QLabel("PC >> Device")
-        self.oneWaySyncLayout.addWidget(self.oneWaySyncLabel1)
-        self.oneWaySyncSlider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.oneWaySyncSlider.setMaximum(1)
-        self.oneWaySyncLayout.addWidget(self.oneWaySyncSlider)
-        self.oneWaySyncLabel2 = QtGui.QLabel("Device >> PC")
-        self.oneWaySyncLayout.addWidget(self.oneWaySyncLabel2)
-        self.twoWaySyncButton = QtGui.QRadioButton("Two-way synchronization")
-        self.twoWaySyncButton.clicked.connect(self.selectSyncMode)
-        self.manualSyncButton = QtGui.QRadioButton("Manual synchronization")
-        self.manualSyncButton.clicked.connect(self.selectSyncMode)
-        self.setButtonChecked()
-        self.selectSyncLayout = QtGui.QVBoxLayout()
-        self.selectSyncLayout.addLayout(self.oneWaySyncLayout)
-        self.selectSyncLayout.addWidget(self.twoWaySyncButton)
-        self.selectSyncLayout.addWidget(self.manualSyncButton)
-        self.groupBox.setLayout(self.selectSyncLayout)
-        self.verticalLayout_2.addWidget(self.groupBox)
-        # Verbose mode
-        self.verboseLayout = QtGui.QHBoxLayout()
-        self.verboseLabel = QtGui.QLabel("Display log")
-        self.verboseLayout.setAlignment(QtCore.Qt.AlignLeft)
-        self.verboseButton = QtGui.QCheckBox()
-        self.verboseLayout.addWidget(self.verboseButton)
-        if self.verbose == "0":
-            self.verboseButton.setChecked(False)
-        else:
-            self.verboseButton.setChecked(True)
-        self.verboseLayout.addWidget(self.verboseLabel)
-        self.verticalLayout_2.addLayout(self.verboseLayout)
-
-    def okButtonAction(self):
-        # Set mode to be saved
-        if self.oneWaySyncButton.isChecked():
-            self.mode = "one-way" + str(self.oneWaySyncSlider.value())
-        elif self.twoWaySyncButton.isChecked():
-            self.mode = "two-way"
-        elif self.manualSyncButton.isChecked():
-            self.mode = "manual"
-        if self.verboseButton.isChecked():
-            self.verbose = "1"
-        else:
-            self.verbose = "0"
-        saveData(self.tempTimeout, self.path, self.target_path, self.mode, self.verbose)
-        self.close()
-
-    def timeoutSetting(self):
-        self.tempTimeout = self.timeoutField.text()
-
-    def selectSyncMode(self):
-        if self.oneWaySyncButton.isChecked():
-            self.oneWaySyncLabel1.setEnabled(True)
-            self.oneWaySyncLabel2.setEnabled(True)
-            self.oneWaySyncSlider.setEnabled(True)
-        elif self.twoWaySyncButton.isChecked():
-            self.oneWaySyncLabel1.setEnabled(False)
-            self.oneWaySyncLabel2.setEnabled(False)
-            self.oneWaySyncSlider.setEnabled(False)
-        elif self.manualSyncButton.isChecked():
-            self.oneWaySyncLabel1.setEnabled(False)
-            self.oneWaySyncLabel2.setEnabled(False)
-            self.oneWaySyncSlider.setEnabled(False)
-
-    def setButtonChecked(self):
-        if "one-way" in self.mode:
-            self.oneWaySyncButton.setChecked(True)
-            self.oneWaySyncSlider.setEnabled(True)
-            self.oneWaySyncLabel1.setEnabled(True)
-            self.oneWaySyncLabel2.setEnabled(True)
-            self.oneWaySyncSlider.setValue(int(self.mode[7]))
-        elif self.mode == "two-way":
-            self.twoWaySyncButton.setChecked(True)
-            self.oneWaySyncSlider.setEnabled(False)
-            self.oneWaySyncLabel1.setEnabled(False)
-            self.oneWaySyncLabel2.setEnabled(False)
-        elif self.mode == "manual":
-            self.manualSyncButton.setChecked(True)
-            self.oneWaySyncSlider.setEnabled(False)
-            self.oneWaySyncLabel1.setEnabled(False)
-            self.oneWaySyncLabel2.setEnabled(False)
-        else:
-            self.oneWaySyncButton.setChecked(True)
-            self.oneWaySyncSlider.setEnabled(True)
-            self.oneWaySyncSlider.setValue(0)
-            self.oneWaySyncLabel1.setEnabled(True)
-            self.oneWaySyncLabel2.setEnabled(True)
-
-class FileDialog(QtGui.QFileDialog):
-        def __init__(self, *args):
-            QtGui.QFileDialog.__init__(self, *args)
-            self.setOption(self.DontUseNativeDialog, True)
-            self.setFileMode(self.ExistingFiles)
-            btns = self.findChildren(QtGui.QPushButton)
-            self.openBtn = [x for x in btns if 'open' in str(x.text()).lower()][0]
-            self.openBtn.clicked.disconnect()
-            self.openBtn.clicked.connect(self.openClicked)
-            self.tree = self.findChild(QtGui.QTreeView)
-
-        def openClicked(self):
-            inds = self.tree.selectionModel().selectedIndexes()
-            files = []
-            for i in inds:
-                if i.column() == 0:
-                    files.append(os.path.join(str(self.directory().absolutePath()),str(i.data().toString())))
-            self.selectedFiles = files
-            self.hide()
-
-        def filesSelected(self):
-            return self.selectedFiles
-
-def main():
-    app = QtGui.QApplication(sys.argv)
-    app_icon = QtGui.QIcon()
-    app_icon.addPixmap(QtGui.QPixmap(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'icon.ico'))), QtGui.QIcon.Normal)
-    app.setWindowIcon(app_icon)
-    window = SyncBlueMainWindow()
-    sys.exit(app.exec_())
-
-if __name__=='__main__':
-    main()

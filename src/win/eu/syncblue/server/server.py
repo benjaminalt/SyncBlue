@@ -18,15 +18,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 """ Server should support put, get, listdir, change dir, mkdir """
 
+from eu.syncblue.core.utils import debug, DEBUG, EmittingStream
+import serverutils as utils
+
 from bluetooth import *
 from PyOBEX.common import OBEX_Version
 from PyOBEX import server
 from PyOBEX import requests
 from PyOBEX import responses
 from PyOBEX import headers
-from PyQt4 import QtCore
-import serverutils as utils
-from syncblue import debug
+from PyQt4 import QtCore, QtGui
 import os, sys, shutil
 
 # Reimplements PyOBEX.server.Server
@@ -272,3 +273,64 @@ class ServerThread(QtCore.QThread):
         self.socket = self.server.start_service()
         self.server.serve(self.socket)
         self.serverDone.emit()
+
+# Server window class
+class ServerWindow(QtGui.QDialog):
+
+    abortServerSig = QtCore.pyqtSignal()
+
+    def __init__(self, parent):
+        super(ServerWindow, self).__init__(parent)
+        if not DEBUG:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        self.setWindowTitle("Server Mode")
+        self.initUI(parent)
+
+    def initUI(self, parent):
+        self.mainLayout = QtGui.QVBoxLayout(self)
+        self.log = QtGui.QTextEdit(self)
+        self.mainLayout.addWidget(self.log)
+        self.buttonLayout = QtGui.QHBoxLayout()
+        self.mainLayout.addLayout(self.buttonLayout)
+        self.startServerButton = QtGui.QPushButton("Launch server", self)
+        self.buttonLayout.addWidget(self.startServerButton)
+        self.startServerButton.clicked.connect(self.startServer)
+        self.abortServerButton = QtGui.QPushButton("Abort", self)
+        self.buttonLayout.addWidget(self.abortServerButton)
+        self.abortServerButton.clicked.connect(self.abortServer)
+        self.abortServerButton.setEnabled(False)
+
+    def normalOutputWritten(self, text):
+        cursor = self.log.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertText(text)
+        self.log.setTextCursor(cursor)
+        self.log.ensureCursorVisible()
+
+    def startServer(self):
+        self.serverThread = ServerThread()
+        self.abortServerButton.setEnabled(True)
+        self.startServerButton.setEnabled(False)
+        self.serverThread.serverDone.connect(self.onServerDone)
+        self.abortServerSig.connect(self.serverThread.abort, QtCore.Qt.QueuedConnection)
+        self.serverThread.start()
+
+    def abortServer(self):
+        try:
+            reply = QtGui.QMessageBox.question(self, "Server abort", "Are you sure you want to abort?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                self.startServerButton.setEnabled(True)
+                self.abortServerButton.setEnabled(False)
+                if (self.serverThread):
+                    self.abortServerSig.emit()
+                    print "Server terminated."
+            else:
+                pass
+        except IOError: # If attempting to disconnect a disconnected socket
+            print "The connection has been lost. Terminating server..."
+            self.serverThread.terminate()
+            print "Server terminated."
+
+    def onServerDone(self):
+        self.startServerButton.setEnabled(True)
+        self.abortServerButton.setEnabled(False)
