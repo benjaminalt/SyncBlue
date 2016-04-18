@@ -22,6 +22,7 @@ Entry point to SyncBlue.
 """
 
 from eu.syncblue.core import main as mainWindow
+from eu.syncblue.core import utils
 from PyQt4 import QtGui
 import sys
 
@@ -34,4 +35,7 @@ def main():
     sys.exit(app.exec_())
 
 if __name__=='__main__':
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ["--debug", "-d", "/debug", "/D", "/d"]:
+            utils.DEBUG = True
     main()

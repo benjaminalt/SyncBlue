@@ -27,9 +27,10 @@ import PyOBEX.client
 import PyOBEX.responses
 from PyQt4 import QtCore
 import re
-import os
+import os, shutil
 import datetime
 import string
+import traceback
 
 filelist = []
 current_path = ""
@@ -89,6 +90,7 @@ def browse(client, target, folderlist, current_folders):
         client.setpath(target, create_dir = True)
         print "Target directory not found. New directory created at the desired location."
 
+# Sync from local pc to target device
 def one_way_sync(client, path, target_path):
     global filelist
     folderlist = target_path.split("/")
@@ -271,6 +273,8 @@ def make_filelist(path):
 
 # Returns a list of dicts with objects' attributes (type, name, date) in the current folder on the home device
 def get_attributes_home(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
     files_and_folders = os.listdir(path)
     datalist = []
     for item in files_and_folders:
@@ -345,9 +349,10 @@ class OneWaySyncThread(QtCore.QThread):
                 find_target_folder(self.client, self.targetPath)
                 print "Syncing..."
                 try:
+                    print "self.path (on this PC): {}".format(self.path)
                     if os.path.exists(self.path):
                         shutil.rmtree(self.path, ignore_errors = False)
-                except Exception:
+                except Exception as e: # TODO: Check for actual exception here
                     print "Error syncing folder on this PC. Make sure not to sync folders containing read-only files."
                     print "Aborting..."
                     disconn = self.client.disconnect()

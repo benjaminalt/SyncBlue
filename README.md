@@ -2,14 +2,15 @@
 Software for peer-to-peer, cloudless, cross-platform file synchronization.
 
 SyncBlue is a cross-platform program that allows file and folder
-synchronization via Bluetooth.
+synchronization via Bluetooth. It also serves as a general-purpose OBEX client and
+server.
 It is open source and published under the GNU General Public License
 (GPL, http://www.gnu.org/licenses/gpl-3.0.txt).
 
 Current Version: 0.3
 
-For binary **installer downloads** (.exe, .pkg), installation instructions and further information on the releases visit www.syncblue.eu .
-You can also get the released installers [here](https://github.com/benjaminalt/SyncBlue/releases).
+For binary **installer downloads** (.exe, .pkg), installation instructions and further information on the releases, visit [our website](www.syncblue.eu).
+You can also get the released installers and corresponding source code archives [here](https://github.com/benjaminalt/SyncBlue/releases).
 
 ## Installing & running the source
 
@@ -24,16 +25,18 @@ You can also get the released installers [here](https://github.com/benjaminalt/S
         python setup.py install
 
     Finally, download [PyQT4](https://www.riverbankcomputing.com/software/pyqt/download) for your platform and install it.
-3. You should be good to go!
+3.  You should be good to go! Just run the program:
+
+        python src/win/syncblue.py
 
 ## Still to do
 
 ### Release 0.4
 
 * Fully implement SyncBlue server (OBEX server on devices which do not natively support OBEX)
-    * GET operation
-    * Threading
-    * Stability (always be able to abort)
+    * GET operation DONE
+    * Threading DONE
+    * Stability (always be able to abort) DONE
 
 ### Later releases
 * New logo?

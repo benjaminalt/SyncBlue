@@ -55,7 +55,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
 
         # Menu bar
         self.menubar = self.menuBar()
-        self.launchServerMode = QtGui.QAction("Server Mode", self)
+        self.launchServerMode = QtGui.QAction("Server Mode (Beta)", self)
         self.launchServerMode.triggered.connect(self.launch_server)
         self.launchServerMode.setEnabled(True)
         self.menubar.addAction(self.launchServerMode)

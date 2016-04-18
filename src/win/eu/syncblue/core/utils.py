@@ -50,6 +50,7 @@ def saveData(timeout, path, target_path, mode, verbose):
 def debug(message):
     if DEBUG:
         print message
+        sys.stdout.flush()
 
 # Helper class for StdOut IO
 class EmittingStream(QtCore.QObject):

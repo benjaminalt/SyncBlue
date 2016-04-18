@@ -1,7 +1,8 @@
-SyncBlue Version 0.3 03/24/2016
+SyncBlue Version 0.4 04/11/2016
 
 SyncBlue is a cross-platform program that allows file and folder
-synchronization via Bluetooth.
+synchronization via Bluetooth and provides a cross-platform, graphical OBEX
+client and server.
 It is open source and published under the GNU General Public License
 (GPL, http://www.gnu.org/licenses/gpl-3.0.txt).
 
@@ -18,6 +19,7 @@ CONTENTS
 2.2.1. One-way-sync
 2.2.2. Two-way-sync
 2.2.3. Manual sync
+2.3. Server
 
 3. Known bugs & limitations
 
@@ -31,9 +33,9 @@ CONTENTS
     1.2. Python source (Python 2.7 on Windows XP, Linux/UNIX)
 
         It is possible to run the program on other platforms directly from
-        the source code. To do so, extract the source folder, open a
-        terminal/command-line utility, make the source folder your working directory
-        and type "python eu/syncblue/syncblue.py".
+        the source code. To do so, extract the project archive, open a
+        terminal/command-line utility, make the SyncBlue folder your working directory
+        and type "python src/win/syncblue.py".
 
         Make sure you are running the correct version of Python
         (Python 2.7, https://www.python.org/download/releases/2.7/)
@@ -50,6 +52,8 @@ CONTENTS
 
 
 2. USAGE & OPTIONS
+
+    To use SyncBlue as an OBEX server, go to 2.3.
 
     2.1. Connecting to a device
 
@@ -68,9 +72,12 @@ CONTENTS
         2. Ensure that the target device is within range ( < 5 m.)
         3. Check that your target device is discoverable and can accept incoming connection requests.
 
-        If the problem persists, your target device probably does not support OBEX file transfer
-        and is incompatible with SyncBlue. Windows computers do not advertise OBEX file transfer
-        out of the box and are thus (still) not suitable as target devices.
+        If the problem persists, your target device probably does not support OBEX file transfer.
+        If it is a Windows computer, you can install SyncBlue on the target device and launch
+        a SyncBlue server which will allow you to sync with it. If it is capable of running
+        Python applications (nearly all Unix/Linux computers are), you can try downloading
+        and running the Python source code to launch a server (you can get the source from
+        http://github.com/benjaminalt/SyncBlue).
 
     2.2. Synchronization
 
@@ -99,12 +106,22 @@ CONTENTS
             Enables the user to browse the files and folders on the remote device. Supports "put",
             "get", "delete" and "make folder" operations.
 
+    2.3. Server
+
+        SyncBlue can also be used as an OBEX server to make OBEX available on computers that have
+        a Bluetooth adapter but do not natively provide an OBEX server (such as many Windows computers).
+        This may be useful if your target device has Bluetooth and runs Python (or Windows executables)
+        but does not advertise an OBEX service.
+        To launch the server, just click on "Server Mode" in the menu bar and then on "Launch Server".
+
 
 3. KNOWN BUGS & LIMITATIONS
 
-Does not work with Windows 7, 8 or 8.1 computers as target (!!) devices. Generally, compatibility does not
+To use Windows 7, 8 or 10 computers as target devices, install SyncBlue on both devices and launch a server
+(see above) on the target device. Generally, target device compatibility does not
 depend on the platform of the target device (cross-platform synchronization is supported, so Mac/Android/Linux
 target devices are no problem) but only on whether the target device advertises and supports the OBEX File
-Transfer protocol as well as SDP (Service Discovery Protocol).
+Transfer protocol as well as SDP (Service Discovery Protocol), both of which are provided if the SyncBlue
+server is running.
 
 Copyright 03/24/2016 Benjamin Alt (benjamin_alt@outlook.com)

@@ -16,6 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+
+from eu.syncblue.core import utils
+from PyOBEX import requests
 import os
 import datetime
 
@@ -62,3 +65,18 @@ def get_permissions(filepath):
     if os.access(filepath, os.W_OK):
         perms += "W"
     return perms
+
+# Dissects a request and prints information if utils.DEBUG is set
+def dissect_request(request):
+    utils.debug("\n\nRequest: {}".format(request))
+    utils.debug("\tIs final: {}".format(request.is_final()))
+    for header in request.header_data:
+        utils.debug("\t{}: {}".format(header, header.decode()))
+    utils.debug("\tData: {}".format(request.data))
+
+# Dissects a response and prints information if utils.DEBUG is set
+def dissect_response(response):
+    utils.debug("\n\nResponse: {}".format(response))
+    for header in response.header_data:
+        utils.debug("\t{}: {}".format(header, header.data))
+    utils.debug("\tData: {}".format(response.data))
