@@ -66,3 +66,23 @@ class ConnectThread(QtCore.QThread):
         except IOError:
             self.connectDone.emit(None)
             return
+
+class DisconnectThread(QtCore.QThread):
+    
+    disconnectDone = QtCore.pyqtSignal()
+    
+    client = None
+    
+    def __init__(self, client):
+        self.client = client
+        self.terminationEnabled(True)
+    
+    def run(self):
+        print "Disconnecting..."
+        if isinstance(self.client.disconnect(), PyOBEX.responses.Success):
+            print "Disconnected successfully."
+        else:
+            print "Disconnection failed."
+        self.disconnectDone.emit()
+    
+    

@@ -44,4 +44,5 @@ You can also get the released installers and corresponding source code archives 
 instances
 * Manual mode as tree view
 * More intelligent two-way-sync (avoid duplication for deleted/moved files)
-* Connection via WiFi (FTP) either when on the same network or establishing Airdrop-style ad-hoc network
+* Connection via WiFi ad-hoc network (AirDrop-style) and sync using FTP.
+    * Windows: Ad-hoc network via [netsh](http://www.nextofwindows.com/how-to-turn-your-windows-8-computer-into-a-wireless-hotspot-access-point)

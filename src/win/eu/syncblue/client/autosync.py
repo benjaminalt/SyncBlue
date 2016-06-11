@@ -22,7 +22,7 @@ Collection of methods for automatic (oneway/two-way) synchronization.
 """
 
 from __future__ import division
-import obexfilebrowser
+import obexfilebrowser, connect
 import PyOBEX.client
 import PyOBEX.responses
 from PyQt4 import QtCore
@@ -30,11 +30,11 @@ import re
 import os, shutil
 import datetime
 import string
-import traceback
 
 filelist = []
 current_path = ""
 folder_path = ""
+DISCONNECTED = False
 
 def find_target_folder(client, target_path):
     folderlist = []
@@ -44,13 +44,10 @@ def find_target_folder(client, target_path):
         print "Please use forward slashes in the path declaration or enter a valid path.\n"
         print "Provision of a non-existing target directory will create it in the specified\n"
         print "location, provided the location exists."
-        print "Disconnecting..."
-        if isinstance(client.disconnect(), PyOBEX.responses.Success):
-            print "Disconnected successfully."
-        else:
-            print "Disconnection failed."
+        disconnThread = connect.DisconnectThread(client)
+        disconnThread.start()
         return
-    target = folderlist[len(folderlist)-1]
+    target = folderlist[len(fol1derlist)-1]
     headers, contents = client.listdir()
     move_up(client, contents) # move all the way to highest possible directory
     headers, contents = client.listdir()
@@ -355,11 +352,11 @@ class OneWaySyncThread(QtCore.QThread):
                 except Exception as e: # TODO: Check for actual exception here
                     print "Error syncing folder on this PC. Make sure not to sync folders containing read-only files."
                     print "Aborting..."
-                    disconn = self.client.disconnect()
-                    if isinstance(disconn, PyOBEX.responses.Success):
-                        print "Disconnected successfully."
-                    else:
-                        print "Disconnection failed."
+                    disconnThread = connect.DisconnectThread(self.client)
+                    disconnThread.start()
+                    self.wait(2000)
+                    if disconnThread.isRunning(): # Could not disconnect, for example if server was killed
+                        disconnThread.terminate()
                     self.syncDone.emit()
                     return
                 os.mkdir(self.path)

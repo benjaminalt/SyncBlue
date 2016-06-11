@@ -24,12 +24,13 @@ Entry point to SyncBlue.
 from eu.syncblue.core import main as mainWindow
 from eu.syncblue.core import utils
 from PyQt4 import QtGui
-import sys
+import sys, os
 
 def main():
     app = QtGui.QApplication(sys.argv)
     app_icon = QtGui.QIcon()
-    app_icon.addPixmap(QtGui.QPixmap('icon.ico'), QtGui.QIcon.Normal)
+    icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "icon.ico")
+    app_icon.addPixmap(QtGui.QPixmap(icon_path), QtGui.QIcon.Normal)
     app.setWindowIcon(app_icon)
     window = mainWindow.SyncBlueMainWindow()
     sys.exit(app.exec_())
