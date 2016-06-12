@@ -23,8 +23,8 @@ import os, sys
 import datetime
 
 # Set encoding to prevent UnicodeDecodeError when directory contains files with non-ascii filenames
-#reload(sys)  
-#sys.setdefaultencoding('utf8')
+reload(sys)  
+sys.setdefaultencoding('utf8')
 
 # Returns XML string for response to "listdir"-type requests
 def get_files_xml(path):

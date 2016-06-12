@@ -3,8 +3,8 @@
 block_cipher = None
 
 
-a = Analysis(['src\\win\\eu\\syncblue\\syncblue.py'],
-             pathex=['src\\win\\eu\\syncblue', 'C:\\Users\\benjaminalt\\Desktop\\Projects\\SyncBlue'],
+a = Analysis(['src\\win\\syncblue.py'],
+             pathex=['C:\\Users\\benjaminalt\\Desktop\\Projects\\SyncBlue'],
              binaries=None,
              datas=None,
              hiddenimports=[],
@@ -21,7 +21,7 @@ exe = EXE(pyz,
           a.binaries,
           a.zipfiles,
           a.datas,
-          name='SyncBlue',
+          name='syncblue',
           debug=False,
           strip=False,
           upx=True,

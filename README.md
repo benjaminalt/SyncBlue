@@ -9,7 +9,7 @@ It is open source and published under the GNU General Public License
 
 Current Version: 0.4
 
-**Attention: The server functionality is still in a beta stage and has been tested only under Windows 10. Before syncing anything, be sure to backup important files,
+**Attention: The server functionality is still in a beta stage and has been tested only under Windows 10 with the Python, Windows and Mac clients. Before syncing anything, be sure to backup important files,
 as loss of files may occur, particularly when syncing whole folders or using the server in one-way or two-way automatic mode.**
 
 For binary **installer downloads** (.exe, .pkg), installation instructions and further information on the releases, visit [our website](www.syncblue.eu).
