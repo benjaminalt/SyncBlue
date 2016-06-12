@@ -7,7 +7,10 @@ server.
 It is open source and published under the GNU General Public License
 (GPL, http://www.gnu.org/licenses/gpl-3.0.txt).
 
-Current Version: 0.3
+Current Version: 0.4
+
+**Attention: The server functionality is still in a beta stage and has been tested only under Windows 10. Before syncing anything, be sure to backup important files,
+as loss of files may occur, particularly when syncing whole folders or using the server in one-way or two-way automatic mode.**
 
 For binary **installer downloads** (.exe, .pkg), installation instructions and further information on the releases, visit [our website](www.syncblue.eu).
 You can also get the released installers and corresponding source code archives [here](https://github.com/benjaminalt/SyncBlue/releases).
@@ -31,14 +34,7 @@ You can also get the released installers and corresponding source code archives 
 
 ## Still to do
 
-### Release 0.4
-
-* Fully implement SyncBlue server (OBEX server on devices which do not natively support OBEX)
-    * GET operation DONE
-    * Threading DONE
-    * Stability (always be able to abort) DONE
-
-### Later releases
+### Release 0.5 : Contributers wanted!!!
 * New logo?
 * Python client: Threaded manual mode put/get/etc. operations --> gray out put/get/etc. buttons while transferring OR use multiple BrowserClient
 instances

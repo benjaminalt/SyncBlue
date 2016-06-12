@@ -36,6 +36,7 @@ def main():
     sys.exit(app.exec_())
 
 if __name__=='__main__':
+    utils.DATA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data.txt")
     if len(sys.argv) > 1:
         if sys.argv[1] in ["--debug", "-d", "/debug", "/D", "/d"]:
             utils.DEBUG = True

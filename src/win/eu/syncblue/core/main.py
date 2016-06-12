@@ -313,7 +313,7 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
     # Gets called when connectThread finishes. Client is a PyOBEX.BrowserClient on success or None on failure
     def onConnect(self, client):
         if not client:
-            message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer and that you select 'OBEX File Transfer' from the services menu."
+            message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer or is running SyncBlue in Server Mode."
             QtGui.QMessageBox.warning(self, "Connection Error", message, QtGui.QMessageBox.Ok)
             self.enableTop(True)
             return
@@ -352,6 +352,6 @@ class SyncBlueMainWindow(QtGui.QMainWindow):
 
     # Called when a sync operation resulted in an error. Prints an error message and re-enables the top panel.
     def onSyncError(self):
-        message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer and that you select 'OBEX File Transfer' from the services menu."
+        message = "Could not connect to target device. Make sure the target device has Bluetooth turned on, is discoverable and paired with this computer. Also, make sure that your device supports OBEX file transfer or is running SyncBlue in Server Mode."
         QtGui.QMessageBox.warning(self, "Connection Error", message, QtGui.QMessageBox.Ok)
         self.enableTop(True)

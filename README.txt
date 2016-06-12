@@ -1,4 +1,4 @@
-SyncBlue Version 0.4 04/11/2016
+SyncBlue Version 0.4 06/12/2016
 
 SyncBlue is a cross-platform program that allows file and folder
 synchronization via Bluetooth and provides a cross-platform, graphical OBEX
@@ -113,6 +113,7 @@ CONTENTS
         This may be useful if your target device has Bluetooth and runs Python (or Windows executables)
         but does not advertise an OBEX service.
         To launch the server, just click on "Server Mode" in the menu bar and then on "Launch Server".
+        If the client won't connect to the server, make sure the two devices are paired.
 
 
 3. KNOWN BUGS & LIMITATIONS
@@ -124,4 +125,4 @@ target devices are no problem) but only on whether the target device advertises 
 Transfer protocol as well as SDP (Service Discovery Protocol), both of which are provided if the SyncBlue
 server is running.
 
-Copyright 03/24/2016 Benjamin Alt (benjamin_alt@outlook.com)
+Copyright 06/12/2016 Benjamin Alt (benjamin_alt@outlook.com)

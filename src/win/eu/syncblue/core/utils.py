@@ -20,6 +20,7 @@ from PyQt4 import QtCore
 import os, sys
 
 DEBUG = False
+DATA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data.txt")
 
 def module_path():
     if hasattr(sys, "frozen"):
@@ -32,8 +33,8 @@ def loadData():
     target_path = "target path here"
     mode = "manual"
     verbose = "1"
-    if os.path.exists(os.path.join(module_path(), "data.txt")):
-        fo = open(os.path.join(module_path(), "data.txt"), "r")
+    if os.path.exists(DATA_PATH):
+        fo = open(DATA_PATH, "r")
         timeout = fo.readline().rstrip()
         path = fo.readline().rstrip()
         target_path = fo.readline().rstrip()
@@ -43,7 +44,7 @@ def loadData():
     return timeout, path, target_path, mode, verbose
 
 def saveData(timeout, path, target_path, mode, verbose):
-    fo = open(os.path.join(module_path(), "data.txt"), "w")
+    fo = open(DATA_PATH, "w")
     fo.write("{0}\n{1}\n{2}\n{3}\n{4}".format(str(timeout), str(path), str(target_path), str(mode), str(verbose)))
     fo.close()
 

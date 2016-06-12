@@ -1,6 +1,6 @@
 """
 Copyright 2016 Benjamin Alt
-benjaminalt@arcor.de
+benjamin_al@outlook.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,8 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from eu.syncblue.core import utils
 from PyOBEX import requests
-import os
+import os, sys
 import datetime
+
+# Set encoding to prevent UnicodeDecodeError when directory contains files with non-ascii filenames
+#reload(sys)  
+#sys.setdefaultencoding('utf8')
 
 # Returns XML string for response to "listdir"-type requests
 def get_files_xml(path):
