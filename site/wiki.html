@@ -58,8 +58,8 @@
                     <h3>Compatible target devices</h3>
                     <p>Target device compatibility is platform-independent; it is, in principle, possible to connect to Bluetooth-enabled devices of any operating system.
                     However, the target device must support Bluetooth pairing and the OBEX File Transfer protocol.
-                    Note: Windows computers support OBEX File Transfer but do not advertise (broadcast) it. Windows computers cannot (yet) be
-                    connected to through SyncBlue (but it is possible to install SyncBlue on Windows and connect to non-Windows devices).</p>
+                    Note: Windows computers support OBEX File Transfer but do not advertise (broadcast) it. To synchronize with a Windows
+                    machine, install SyncBlue on it and run it in <a href="serverMode">Server Mode</a>.</p>
                     <a name="windows"><h2>Microsoft Windows</h2></a>
                     <h3>System requirements</h3>
                     <p>Windows 7 or higher (64-bit).</p>
@@ -78,8 +78,7 @@
                     and on the target device, that the target device is within range ( < 5 m.)
                     and that your target device is discoverable and can accept incoming connection requests.
                     If the problem persists, your target device does not support OBEX file transfer
-                    and is incompatible with SyncBlue. Windows computers do not advertise OBEX file transfer
-                    out of the box and are thus (still) not suitable as target devices.</p>
+                    and is incompatible with SyncBlue. You should try running SyncBlue in <a href="#serverMode">Server Mode</a> on the target device.</p>
                     <h4>Synchronization</h4>
                     <p>The default sync mode is "one-way sync". To change the sync mode, click "Settings".</p>
                     <p>One-way sync and two-way sync require the user to specify a sync folder on the
@@ -98,6 +97,15 @@
                     <h5>Manual sync</h5>
                     <p>Enables the user to browse the files and folders on the remote device. Supports "put",
                     "get", "delete" and "make folder" operations.</p>
+                    <h4><a name="serverMode">Server mode <span style="color: red;">(beta)</span></a></h4>
+                    <p>Clicking the corresponding button in the menu bar starts a Bluetooth OBEX server which advertises a SyncBlue service to all surrounding Bluetooth
+                    devices. The SyncBlue service provides a subset of the functions of OBEX File Transfer which is
+                    sufficient to work with all SyncBlue clients. This enables communication between devices that do
+                    not natively support OBEX File Transfer such as two Windows machines or cross-platform synchronization
+                    between a Mac client and a Windows server.</p>
+                                    <p style="color: red;">The server is still in a beta stage. While all operations work on the developers' machines,
+                we have not been able to test it on different operating systems with different Bluetooth stacks, path conventions etc. yet.
+                Make sure to backup critical files before trying the server on your machine, particularly when syncing entire directory structures.</p>
 
                     <a name="macos"><h2>Mac OS X</h2></a>
                     <h3>System requirements</h3>
@@ -130,7 +138,7 @@
                     <p>Feature coming soon.</p>
 
                     <a name="source"><h2>Source code</h2></a>
-                    <h3>Python 2.7 for Windows XP/7/8/8.1, Linux</h3>
+                    <h3>Python 2.7 for Windows XP/7/8/8.1/10, Linux</h3>
                     <p>It is possible to run the program on other platforms directly from
                     the source code. To do so, extract the source folder, open a
                     terminal/command-line utility, make the source folder your working directory
